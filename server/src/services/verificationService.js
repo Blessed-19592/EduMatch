@@ -136,20 +136,31 @@ export const verifyStudentCode = async (registrationNumber, submittedCode) => {
             throw new Error('Invalid or expired verification code.');
         }
 
-        // Mark the code as successfully verified.
-        await client.query(
-            `UPDATE email_verification_codes
-             SET verified_at = NOW()
-             WHERE verification_id = $1`,
-            [verification.verification_id]
-        );
+        // Generate a secure temporary registration token.
+const registrationToken = crypto.randomBytes(32).toString('hex');
 
-        await client.query('COMMIT');
+// Hash the token before storing it.
+const tokenHash = crypto
+    .createHash('sha256')
+    .update(registrationToken)
+    .digest('hex');
 
-        return {
-            message: 'Email successfully verified.',
-            registryStudentId: studentId
-        };
+// Mark the verification code as used and save the token hash.
+await client.query(
+    `UPDATE email_verification_codes
+     SET verified_at = NOW(),
+         registration_token_hash = $1,
+         registration_token_expires_at = NOW() + INTERVAL '15 minutes'
+     WHERE verification_id = $2`,
+    [tokenHash, verification.verification_id]
+);
+
+await client.query('COMMIT');
+
+return {
+    message: 'Email successfully verified.',
+    registrationToken
+};
 
     } catch (error) {
         if (client) {
