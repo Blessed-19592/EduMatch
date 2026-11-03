@@ -3,9 +3,9 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 
 import {
-    requestStudentVerification
+    requestStudentVerification,
+    verifyStudentCode
 } from '../services/verificationService.js';
-
 const router = express.Router();
 
 // Limit verification requests to prevent email abuse.
@@ -63,4 +63,50 @@ router.post(
     }
 );
 
+// Verify the student's email code.
+router.post(
+    '/register/verify-code',
+    verificationLimiter,
+    async (req, res) => {
+        try {
+            const schema = z.object({
+                registrationNumber: z.string()
+                    .trim()
+                    .min(3)
+                    .max(50),
+
+                code: z.string()
+                    .regex(/^\d{6}$/, 'Code must contain six digits.')
+            });
+
+            const validation = schema.safeParse(req.body);
+
+            if (!validation.success) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Provide a valid registration number and six-digit code.'
+                });
+            }
+
+            const result = await verifyStudentCode(
+                validation.data.registrationNumber,
+                validation.data.code
+            );
+
+            return res.status(200).json({
+                status: 'success',
+                message: result.message,
+                registrationToken: result.registrationToken
+            });
+
+        } catch (error) {
+            console.error('Code verification failed:', error.message);
+
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid or expired verification code.'
+            });
+        }
+    }
+);
 export default router;
