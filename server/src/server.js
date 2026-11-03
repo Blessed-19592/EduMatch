@@ -1,3 +1,4 @@
+import authRoutes from './routes/authRoutes.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -39,7 +40,7 @@ const generalLimiter = rateLimit({
 });
 
 app.use('/api', generalLimiter);
-
+app.use('/api/auth', authRoutes);
 // ======================================
 // HEALTH CHECK
 // ======================================
