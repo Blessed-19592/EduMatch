@@ -114,4 +114,62 @@ router.post(
         }
     }
 );
+
+// Complete student registration.
+router.post(
+    '/register/complete',
+    async (req, res) => {
+        try {
+            const schema = z.object({
+                registrationNumber: z.string()
+                    .trim()
+                    .min(3)
+                    .max(50),
+
+                registrationToken: z.string()
+                    .regex(/^[a-f0-9]{64}$/),
+
+                password: z.string()
+                    .min(10, 'Password must contain at least 10 characters.')
+                    .max(72, 'Password is too long.')
+            });
+
+            const validation = schema.safeParse(req.body);
+
+            if (!validation.success) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Please provide valid registration details and a password of at least 10 characters.'
+                });
+            }
+
+            const result = await completeStudentRegistration(
+                validation.data.registrationNumber,
+                validation.data.registrationToken,
+                validation.data.password
+            );
+
+            return res.status(201).json({
+                status: 'success',
+                message: result.message,
+                userId: result.userId
+            });
+
+        } catch (error) {
+            console.error('Registration failed:', error.message);
+
+            if (error.code === '23505') {
+                return res.status(409).json({
+                    status: 'error',
+                    message: 'An account already exists for this student.'
+                });
+            }
+
+            return res.status(400).json({
+                status: 'error',
+                message: 'Registration could not be completed. Please verify your details or request a new verification code.'
+            });
+        }
+    }
+);
 export default router;
