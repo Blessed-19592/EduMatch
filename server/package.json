@@ -66,6 +66,7 @@
     "negotiator": "^1.1.0",
     "node-addon-api": "^8.9.2",
     "node-gyp-build": "^4.8.4",
+    "nodemailer": "^10.3.1",
     "object-assign": "^4.1.1",
     "object-inspect": "^1.13.4",
     "on-finished": "^2.4.2",
