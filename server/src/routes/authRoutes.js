@@ -1,4 +1,5 @@
 
+import { requireAuth } from '../middleware/requireAuth.js';
 import {
     completeStudentRegistration,
     loginStudent
@@ -227,5 +228,12 @@ router.post('/login', async (req, res) => {
             message: 'Invalid registration number or password.',
         });
     }
+});
+
+router.get('/me', requireAuth, (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        user: req.session.user,
+    });
 });
 export default router;
