@@ -2,7 +2,9 @@
 import { requireAuth } from '../middleware/requireAuth.js';
 import {
     completeStudentRegistration,
-    loginStudent
+    loginStudent,
+    requestPasswordReset,
+    resetStudentPassword
 } from '../services/authService.js';
 import express from 'express';
 
@@ -39,6 +41,17 @@ const loginSchema = z.object({
     registrationNumber: z.string().trim().min(3).max(50),
     password: z.string().min(10).max(72),
 });
+
+const forgotPasswordSchema = z.object({
+    registrationNumber: z.string().trim().min(3).max(50),
+});
+
+const resetPasswordSchema = z.object({
+    token: z.string().regex(/^[a-f0-9]{64}$/),
+    newPassword: z.string().min(10).max(72),
+});
+
+
 // Request an email verification code.
 router.post(
     '/register/request-code',
@@ -254,5 +267,60 @@ router.post('/logout', requireAuth, (req, res, next) => {
             message: 'Logout successful.',
         });
     });
+});
+
+router.post('/forgot-password', async (req, res, next) => {
+    try {
+        const validation = forgotPasswordSchema.safeParse(req.body);
+
+        if (!validation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Please provide a valid registration number.',
+            });
+        }
+
+        await requestPasswordReset(
+            validation.data.registrationNumber
+        );
+
+        return res.status(200).json({
+            status: 'success',
+            message: 'If an eligible account exists, password reset instructions will be sent.',
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/reset-password', async (req, res) => {
+    try {
+        const validation = resetPasswordSchema.safeParse(req.body);
+
+        if (!validation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Please provide a valid token and password.',
+            });
+        }
+
+        const { token, newPassword } = validation.data;
+
+        await resetStudentPassword(token, newPassword);
+
+        return res.status(200).json({
+            status: 'success',
+            message: 'Password reset successfully. Please log in with your new password.',
+        });
+
+    } catch (error) {
+        console.error('Password reset failed:', error.message);
+
+        return res.status(400).json({
+            status: 'error',
+            message: 'Password reset failed. Your token may be invalid or expired.',
+        });
+    }
 });
 export default router;
