@@ -1,3 +1,5 @@
+
+import { sendPasswordResetEmail } from './emailService.js';
 import crypto from 'node:crypto';
 import bcrypt from 'bcrypt';
 
@@ -161,4 +163,132 @@ export const loginStudent = async (registrationNumber, password) => {
         email: user.email,
         role: user.role,
     };
+};
+
+export const requestPasswordReset = async (registrationNumber) => {
+    const result = await pool.query(
+        `SELECT
+            u.user_id,
+            u.full_name,
+            rs.verification_email
+         FROM users u
+         JOIN student_profiles sp
+            ON sp.user_id = u.user_id
+         JOIN registry_students rs
+            ON rs.registry_student_id = sp.registry_student_id
+         WHERE u.registration_number = $1
+           AND u.role = 'student'
+           AND u.account_status = 'active'`,
+        [registrationNumber.trim().toUpperCase()]
+    );
+
+    // Do not reveal whether an account exists.
+    if (result.rows.length === 0) {
+        return;
+    }
+
+    const user = result.rows[0];
+
+    const token = crypto.randomBytes(32).toString('hex');
+
+    const tokenHash = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+    // Invalidate previous unused reset tokens.
+    await pool.query(
+        `UPDATE password_reset_tokens
+         SET used_at = NOW()
+         WHERE user_id = $1
+           AND used_at IS NULL`,
+        [user.user_id]
+    );
+
+    await pool.query(
+        `INSERT INTO password_reset_tokens (
+            user_id,
+            token_hash,
+            expires_at
+         )
+         VALUES ($1, $2, NOW() + INTERVAL '30 minutes')`,
+        [user.user_id, tokenHash]
+    );
+
+    try {
+        await sendPasswordResetEmail(
+            user.verification_email,
+            token
+        );
+    } catch (error) {
+        await pool.query(
+            `UPDATE password_reset_tokens
+             SET used_at = NOW()
+             WHERE token_hash = $1`,
+            [tokenHash]
+        );
+
+        throw error;
+    }
+};
+
+export const resetStudentPassword = async (token, newPassword) => {
+    const tokenHash = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const result = await client.query(
+            `SELECT reset_id, user_id
+             FROM password_reset_tokens
+             WHERE token_hash = $1
+               AND expires_at > NOW()
+               AND used_at IS NULL
+             FOR UPDATE`,
+            [tokenHash]
+        );
+
+        if (result.rows.length === 0) {
+            throw new Error('Invalid or expired password reset token.');
+        }
+
+        const reset = result.rows[0];
+
+        await client.query(
+            `UPDATE users
+             SET password_hash = $1
+             WHERE user_id = $2`,
+            [passwordHash, reset.user_id]
+        );
+
+        await client.query(
+            `UPDATE password_reset_tokens
+             SET used_at = NOW()
+             WHERE reset_id = $1`,
+            [reset.reset_id]
+        );
+
+        // Invalidate all existing login sessions for this user.
+        await client.query(
+            `DELETE FROM user_sessions
+             WHERE sess::jsonb -> 'user' ->> 'userId' = $1`,
+            [reset.user_id]
+        );
+
+        await client.query('COMMIT');
+
+    } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw error;
+
+    } finally {
+        client.release();
+    }
 };
