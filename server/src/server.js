@@ -1,3 +1,5 @@
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 import authRoutes from './routes/authRoutes.js';
 import express from 'express';
 import cors from 'cors';
@@ -10,6 +12,14 @@ import pool from './config/database.js';
 dotenv.config();
 
 const app = express();
+
+const PgSession = connectPgSimple(session);
+
+const sessionStore = new PgSession({
+    pool,
+    tableName: 'user_sessions',
+    createTableIfMissing: true,
+});
 
 const PORT = process.env.PORT || 5000;
 
@@ -26,6 +36,20 @@ app.use(cors({
 
 app.use(express.json({
     limit: '10kb',
+}));
+
+app.use(session({
+    name: 'edumatch_sid',
+    store: sessionStore,
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 8 * 60 * 60 * 1000,
+    },
 }));
 
 // ======================================
