@@ -125,3 +125,40 @@ export const completeStudentRegistration = async (
         client.release();
     }
 };
+
+export const loginStudent = async (registrationNumber, password) => {
+    const result = await pool.query(
+        `SELECT
+            user_id,
+            full_name,
+            email,
+            password_hash,
+            role,
+            account_status
+         FROM users
+         WHERE registration_number = $1`,
+        [registrationNumber.trim().toUpperCase()]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Invalid registration number or password.');
+    }
+
+    const user = result.rows[0];
+
+    const passwordMatches = await bcrypt.compare(
+        password,
+        user.password_hash
+    );
+
+    if (!passwordMatches || user.account_status !== 'active') {
+        throw new Error('Invalid registration number or password.');
+    }
+
+    return {
+        userId: user.user_id,
+        fullName: user.full_name,
+        email: user.email,
+        role: user.role,
+    };
+};

@@ -1,6 +1,7 @@
 
 import {
-    completeStudentRegistration
+    completeStudentRegistration,
+    loginStudent
 } from '../services/authService.js';
 import express from 'express';
 
@@ -33,6 +34,10 @@ const registrationSchema = z.object({
         .max(50)
 });
 
+const loginSchema = z.object({
+    registrationNumber: z.string().trim().min(3).max(50),
+    password: z.string().min(10).max(72),
+});
 // Request an email verification code.
 router.post(
     '/register/request-code',
@@ -172,4 +177,55 @@ router.post(
         }
     }
 );
+
+router.post('/login', async (req, res) => {
+    try {
+        const validation = loginSchema.safeParse(req.body);
+
+        if (!validation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Please provide valid login details.',
+            });
+        }
+
+        const { registrationNumber, password } = validation.data;
+
+        const user = await loginStudent(registrationNumber, password);
+
+        req.session.regenerate((error) => {
+            if (error) {
+                return res.status(500).json({
+                    status: 'error',
+                    message: 'Unable to establish a login session.',
+                });
+            }
+
+            req.session.user = user;
+
+            req.session.save((saveError) => {
+                if (saveError) {
+                    return res.status(500).json({
+                        status: 'error',
+                        message: 'Unable to establish a login session.',
+                    });
+                }
+
+                return res.status(200).json({
+                    status: 'success',
+                    message: 'Login successful.',
+                    user,
+                });
+            });
+        });
+
+    } catch (error) {
+        console.error('Login failed:', error.message);
+
+        res.status(401).json({
+            status: 'error',
+            message: 'Invalid registration number or password.',
+        });
+    }
+});
 export default router;
