@@ -28,6 +28,27 @@ const verificationLimiter = rateLimit({
         message: 'Too many requests. Please try again later.'
     }
 });
+const forgotPasswordLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 3,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+        status: 'error',
+        message: 'Too many password reset requests. Please try again later.',
+    },
+});
+
+const resetPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+        status: 'error',
+        message: 'Too many reset attempts. Please try again later.',
+    },
+});
 
 // Validate registration number.
 const registrationSchema = z.object({
@@ -269,7 +290,7 @@ router.post('/logout', requireAuth, (req, res, next) => {
     });
 });
 
-router.post('/forgot-password', async (req, res, next) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req, res, next) => {
     try {
         const validation = forgotPasswordSchema.safeParse(req.body);
 
@@ -294,7 +315,7 @@ router.post('/forgot-password', async (req, res, next) => {
     }
 });
 
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', resetPasswordLimiter, async (req, res) => {
     try {
         const validation = resetPasswordSchema.safeParse(req.body);
 
