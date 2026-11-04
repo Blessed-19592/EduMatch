@@ -236,4 +236,23 @@ router.get('/me', requireAuth, (req, res) => {
         user: req.session.user,
     });
 });
+
+router.post('/logout', requireAuth, (req, res, next) => {
+    req.session.destroy((error) => {
+        if (error) {
+            return next(error);
+        }
+
+        res.clearCookie('edumatch_sid', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+        });
+
+        return res.status(200).json({
+            status: 'success',
+            message: 'Logout successful.',
+        });
+    });
+});
 export default router;
