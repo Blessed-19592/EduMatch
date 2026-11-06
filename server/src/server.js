@@ -1,4 +1,5 @@
 
+import taskRoutes from './routes/taskRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import { createServer } from 'node:http';
 import { configureSocketServer } from './sockets/socketServer.js';
@@ -72,6 +73,7 @@ const generalLimiter = rateLimit({
 app.use('/api', generalLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupRoutes);
+app.use('/api/groups', taskRoutes);
 // ======================================
 // HEALTH CHECK
 // ======================================
