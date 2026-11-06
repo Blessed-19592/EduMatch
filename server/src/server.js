@@ -1,4 +1,5 @@
 
+import groupRoutes from './routes/groupRoutes.js';
 import { createServer } from 'node:http';
 import { configureSocketServer } from './sockets/socketServer.js';
 import session from 'express-session';
@@ -70,6 +71,7 @@ const generalLimiter = rateLimit({
 
 app.use('/api', generalLimiter);
 app.use('/api/auth', authRoutes);
+app.use('/api/groups', groupRoutes);
 // ======================================
 // HEALTH CHECK
 // ======================================
@@ -121,9 +123,31 @@ app.use((req, res) => {
 app.use((error, req, res, next) => {
     console.error(error);
 
-    res.status(500).json({
+    let statusCode = error.statusCode || 500;
+    let message = error.message;
+
+    // Handle database constraint violations.
+    if (error.code === '23505') {
+        statusCode = 409;
+        message = 'This record already exists.';
+    } else if (
+        ['23503', '23514', '22P02'].includes(error.code)
+    ) {
+        statusCode = 400;
+        message = 'The submitted information is invalid.';
+    } else if (error.code === 'P0001') {
+        statusCode = 409;
+        message = 'The requested operation conflicts with current group conditions.';
+    }
+
+    // Never expose unexpected internal server errors.
+    if (statusCode >= 500) {
+        message = 'An unexpected server error occurred.';
+    }
+
+    res.status(statusCode).json({
         status: 'error',
-        message: 'An unexpected server error occurred.',
+        message,
     });
 });
 
