@@ -1,3 +1,6 @@
+
+import { createServer } from 'node:http';
+import { configureSocketServer } from './sockets/socketServer.js';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import authRoutes from './routes/authRoutes.js';
@@ -38,7 +41,7 @@ app.use(express.json({
     limit: '10kb',
 }));
 
-app.use(session({
+const sessionMiddleware = session({
     name: 'edumatch_sid',
     store: sessionStore,
     secret: process.env.SESSION_SECRET,
@@ -50,7 +53,9 @@ app.use(session({
         sameSite: 'lax',
         maxAge: 8 * 60 * 60 * 1000,
     },
-}));
+});
+
+app.use(sessionMiddleware);
 
 // ======================================
 // RATE LIMITING
@@ -126,6 +131,10 @@ app.use((error, req, res, next) => {
 // START SERVER
 // ======================================
 
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+
+configureSocketServer(httpServer, sessionMiddleware);
+
+httpServer.listen(PORT, () => {
     console.log(`EduMatch server running on port ${PORT}`);
 });
