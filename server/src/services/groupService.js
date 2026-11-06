@@ -209,6 +209,7 @@ export const submitMembershipRequest = async (
 
 
 // Retrieve pending requests for a group owner.
+// Retrieve pending membership requests for a group owner.
 export const getGroupMembershipRequests = async (
     groupId,
     ownerId
@@ -222,26 +223,37 @@ export const getGroupMembershipRequests = async (
             cr.request_status,
             cr.created_at,
             u.full_name,
-            c.course_name
+            c.name AS course_name,
+            sp.year_of_study
+
          FROM collaboration_requests cr
+
          JOIN student_groups sg
             ON sg.group_id = cr.group_id
+
          JOIN group_members gm
             ON gm.group_id = sg.group_id
            AND gm.student_id = $2
            AND gm.membership_role = 'owner'
            AND gm.membership_status = 'active'
+
          JOIN users u
             ON u.user_id = cr.student_id
+
          LEFT JOIN student_profiles sp
             ON sp.user_id = cr.student_id
+
          LEFT JOIN registry_students rs
             ON rs.registry_student_id = sp.registry_student_id
+
          LEFT JOIN courses c
             ON c.course_id = rs.course_id
+
          WHERE cr.group_id = $1
            AND cr.request_status = 'pending'
+
          ORDER BY cr.created_at ASC`,
+
         [groupId, ownerId]
     );
 
