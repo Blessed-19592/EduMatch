@@ -354,3 +354,179 @@ export const respondToMembershipRequest = async (
         client.release();
     }
 };
+
+// Discover open groups within the student's academic scope.
+export const discoverGroups = async (studentId, scope = 'university') => {
+    const validScopes = ['course', 'department', 'school', 'university'];
+
+    if (!validScopes.includes(scope)) {
+        throw new AppError('Invalid discovery scope.', 400);
+    }
+
+    const result = await pool.query(
+        `SELECT
+            sg.group_id,
+            sg.group_name,
+            sg.description,
+            sg.max_members,
+            sg.group_status,
+            sg.objectives,
+            sg.intention_id,
+            ci.intention_name,
+            sg.collaboration_type_id,
+            ct.type_name AS collaboration_type,
+            u.full_name AS creator_name,
+            c.course_name,
+            d.department_name,
+            f.faculty_name,
+            COUNT(DISTINCT gm.membership_id) FILTER (
+                WHERE gm.membership_status = 'active'
+            ) AS current_members,
+            COALESCE(
+                ARRAY_AGG(DISTINCT s.skill_name)
+                FILTER (WHERE s.skill_id IS NOT NULL),
+                '{}'
+            ) AS required_skills,
+            EXISTS (
+                SELECT 1
+                FROM collaboration_requests cr
+                WHERE cr.group_id = sg.group_id
+                  AND cr.student_id = $1
+                  AND cr.request_status = 'pending'
+            ) AS has_pending_request
+         FROM student_groups sg
+         JOIN student_profiles creator
+            ON creator.user_id = sg.created_by
+         JOIN users u
+            ON u.user_id = sg.created_by
+         LEFT JOIN registry_students rs
+            ON rs.registry_student_id = creator.registry_student_id
+         LEFT JOIN courses c
+            ON c.course_id = rs.course_id
+         LEFT JOIN departments d
+            ON d.department_id = c.department_id
+         LEFT JOIN faculties f
+            ON f.faculty_id = d.faculty_id
+         LEFT JOIN collaboration_intentions ci
+            ON ci.intention_id = sg.intention_id
+         LEFT JOIN collaboration_types ct
+            ON ct.collaboration_type_id = sg.collaboration_type_id
+         LEFT JOIN group_members gm
+            ON gm.group_id = sg.group_id
+         LEFT JOIN group_required_skills grs
+            ON grs.group_id = sg.group_id
+         LEFT JOIN skills s
+            ON s.skill_id = grs.skill_id
+         WHERE sg.group_status = 'open'
+           AND sg.created_by <> $1
+           AND NOT EXISTS (
+                SELECT 1
+                FROM group_members existing
+                WHERE existing.group_id = sg.group_id
+                  AND existing.student_id = $1
+                  AND existing.membership_status = 'active'
+           )
+           AND (
+                $2 = 'university'
+                OR (
+                    $2 = 'school'
+                    AND f.faculty_id = (
+                        SELECT d2.faculty_id
+                        FROM student_profiles sp2
+                        JOIN registry_students rs2
+                            ON rs2.registry_student_id = sp2.registry_student_id
+                        JOIN courses c2
+                            ON c2.course_id = rs2.course_id
+                        JOIN departments d2
+                            ON d2.department_id = c2.department_id
+                        WHERE sp2.user_id = $1
+                    )
+                )
+                OR (
+                    $2 = 'department'
+                    AND d.department_id = (
+                        SELECT c2.department_id
+                        FROM student_profiles sp2
+                        JOIN registry_students rs2
+                            ON rs2.registry_student_id = sp2.registry_student_id
+                        JOIN courses c2
+                            ON c2.course_id = rs2.course_id
+                        WHERE sp2.user_id = $1
+                    )
+                )
+                OR (
+                    $2 = 'course'
+                    AND c.course_id = (
+                        SELECT rs2.course_id
+                        FROM student_profiles sp2
+                        JOIN registry_students rs2
+                            ON rs2.registry_student_id = sp2.registry_student_id
+                        WHERE sp2.user_id = $1
+                    )
+                )
+           )
+         GROUP BY
+            sg.group_id, ci.intention_name, ct.type_name,
+            u.full_name, c.course_name, d.department_name,
+            f.faculty_name
+         ORDER BY sg.created_at DESC`,
+        [studentId, scope]
+    );
+
+    return result.rows;
+};
+
+
+// Retrieve details of a specific group.
+export const getGroupDetails = async (groupId, studentId) => {
+    const result = await pool.query(
+        `SELECT
+            sg.*,
+            ci.intention_name,
+            ct.type_name AS collaboration_type,
+            u.full_name AS creator_name,
+            COUNT(DISTINCT gm.membership_id) FILTER (
+                WHERE gm.membership_status = 'active'
+            ) AS current_members,
+            COALESCE(
+                ARRAY_AGG(DISTINCT s.skill_name)
+                FILTER (WHERE s.skill_id IS NOT NULL),
+                '{}'
+            ) AS required_skills,
+            EXISTS (
+                SELECT 1
+                FROM group_members mine
+                WHERE mine.group_id = sg.group_id
+                  AND mine.student_id = $2
+                  AND mine.membership_status = 'active'
+            ) AS is_member,
+            EXISTS (
+                SELECT 1
+                FROM collaboration_requests cr
+                WHERE cr.group_id = sg.group_id
+                  AND cr.student_id = $2
+                  AND cr.request_status = 'pending'
+            ) AS has_pending_request
+         FROM student_groups sg
+         JOIN users u ON u.user_id = sg.created_by
+         LEFT JOIN collaboration_intentions ci
+            ON ci.intention_id = sg.intention_id
+         LEFT JOIN collaboration_types ct
+            ON ct.collaboration_type_id = sg.collaboration_type_id
+         LEFT JOIN group_members gm
+            ON gm.group_id = sg.group_id
+         LEFT JOIN group_required_skills grs
+            ON grs.group_id = sg.group_id
+         LEFT JOIN skills s
+            ON s.skill_id = grs.skill_id
+         WHERE sg.group_id = $1
+         GROUP BY sg.group_id, ci.intention_name, ct.type_name, u.full_name`,
+        [groupId, studentId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new AppError('Group not found.', 404);
+    }
+
+    return result.rows[0];
+};
