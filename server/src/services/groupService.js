@@ -1,4 +1,7 @@
+
+import { AppError } from '../utils/AppError.js';
 import pool from '../config/database.js';
+
 
 // Create a new collaboration group.
 export const createGroup = async (userId, groupData) => {
@@ -29,7 +32,7 @@ export const createGroup = async (userId, groupData) => {
         );
 
         if (intention.rows.length === 0) {
-            throw new Error('Invalid collaboration intention.');
+            throw new AppError('Invalid collaboration intention.', 400);
         }
 
         // Validate the collaboration type.
@@ -41,7 +44,7 @@ export const createGroup = async (userId, groupData) => {
         );
 
         if (type.rows.length === 0) {
-            throw new Error('Invalid collaboration type.');
+            throw new AppError('Invalid collaboration type.', 400);
         }
 
         // Validate all required skills.
@@ -56,7 +59,7 @@ export const createGroup = async (userId, groupData) => {
             );
 
             if (skills.rows.length !== uniqueSkillIds.length) {
-                throw new Error('One or more selected skills are invalid.');
+                throw new AppError('One or more selected skills are invalid.', 400);
             }
         }
 
