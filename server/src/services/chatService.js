@@ -1,208 +1,108 @@
-import { Server } from 'socket.io';
-import { z } from 'zod';
-
 import pool from '../config/database.js';
 
-import {
-    getGroupChatRoom,
-    getGroupChatHistory,
-    saveGroupMessage
-} from '../services/chatService.js';
+// Get or create a group's chat room.
+export const getGroupChatRoom = async (groupId, userId) => {
+    await pool.query(
+        `INSERT INTO chat_rooms (group_id)
+         SELECT $1
+         WHERE EXISTS (
+             SELECT 1
+             FROM group_members
+             WHERE group_id = $1
+               AND student_id = $2
+               AND membership_status = 'active'
+         )
+         ON CONFLICT (group_id) DO NOTHING`,
+        [groupId, userId]
+    );
 
-const groupIdSchema = z.string().uuid();
+    const result = await pool.query(
+        `SELECT cr.room_id, cr.group_id
+         FROM chat_rooms cr
+         JOIN group_members gm
+            ON gm.group_id = cr.group_id
+         WHERE cr.group_id = $1
+           AND gm.student_id = $2
+           AND gm.membership_status = 'active'`,
+        [groupId, userId]
+    );
 
-const historySchema = z.object({
-    groupId: groupIdSchema,
-    limit: z.number().int().min(1).max(100).default(50),
-    before: z.string().datetime().optional()
-});
-
-const messageSchema = z.object({
-    groupId: groupIdSchema,
-    messageContent: z.string().trim().min(1).max(5000)
-});
-
-// Basic per-connection message rate limiting.
-const messageTimestamps = new Map();
-
-const canSendMessage = (socketId) => {
-    const now = Date.now();
-    const windowMs = 10_000;
-    const maxMessages = 10;
-
-    const timestamps = (messageTimestamps.get(socketId) || [])
-        .filter(timestamp => now - timestamp < windowMs);
-
-    if (timestamps.length >= maxMessages) {
-        messageTimestamps.set(socketId, timestamps);
-        return false;
+    if (result.rows.length === 0) {
+        throw new Error('You are not an active member of this group.');
     }
 
-    timestamps.push(now);
-    messageTimestamps.set(socketId, timestamps);
-
-    return true;
+    return result.rows[0];
 };
 
-export const configureSocketServer = (httpServer, sessionMiddleware) => {
-    const io = new Server(httpServer, {
-        cors: {
-            origin: process.env.CLIENT_URL,
-            credentials: true
-        }
-    });
 
-    // Share Express sessions with Socket.IO.
-    io.engine.use(sessionMiddleware);
+// Retrieve group chat history.
+export const getGroupChatHistory = async (
+    groupId,
+    userId,
+    limit = 50,
+    before = null
+) => {
+    const room = await getGroupChatRoom(groupId, userId);
 
-    // Authenticate socket connections.
-    io.use(async (socket, next) => {
-        try {
-            const userId = socket.request.session?.user?.userId;
+    const result = await pool.query(
+        `SELECT
+            cm.message_id,
+            cm.room_id,
+            cm.sender_id,
+            cm.message_content,
+            cm.created_at,
+            u.full_name AS sender_name
+         FROM chat_messages cm
+         JOIN users u ON u.user_id = cm.sender_id
+         WHERE cm.room_id = $1
+           AND ($2::timestamptz IS NULL OR cm.created_at < $2)
+           AND EXISTS (
+               SELECT 1
+               FROM group_members gm
+               WHERE gm.group_id = $3
+                 AND gm.student_id = $4
+                 AND gm.membership_status = 'active'
+           )
+         ORDER BY cm.created_at DESC, cm.message_id DESC
+         LIMIT $5`,
+        [room.room_id, before, groupId, userId, limit]
+    );
 
-            if (!userId) {
-                return next(new Error('Authentication required.'));
-            }
+    return result.rows.reverse();
+};
 
-            const result = await pool.query(
-                `SELECT user_id, full_name, role, account_status
-                 FROM users
-                 WHERE user_id = $1`,
-                [userId]
-            );
 
-            if (
-                result.rows.length === 0 ||
-                result.rows[0].account_status !== 'active'
-            ) {
-                return next(new Error('Account unavailable.'));
-            }
+// Save a group message.
+export const saveGroupMessage = async (
+    groupId,
+    userId,
+    messageContent
+) => {
+    const content = messageContent.trim();
 
-            socket.data.user = {
-                userId: result.rows[0].user_id,
-                fullName: result.rows[0].full_name,
-                role: result.rows[0].role
-            };
+    if (!content || content.length > 5000) {
+        throw new Error(
+            'Messages must contain between 1 and 5000 characters.'
+        );
+    }
 
-            next();
+    const room = await getGroupChatRoom(groupId, userId);
 
-        } catch (error) {
-            next(new Error('Socket authentication failed.'));
-        }
-    });
+    const result = await pool.query(
+        `INSERT INTO chat_messages (
+            room_id,
+            sender_id,
+            message_content
+         )
+         VALUES ($1, $2, $3)
+         RETURNING
+            message_id,
+            room_id,
+            sender_id,
+            message_content,
+            created_at`,
+        [room.room_id, userId, content]
+    );
 
-    io.on('connection', (socket) => {
-        const user = socket.data.user;
-
-        // Each user's connected devices share a private notification room.
-        socket.join(`user:${user.userId}`);
-
-        console.log(`Authenticated socket connected: ${user.userId}`);
-
-        // Check group membership before granting chat access.
-        socket.on('group:join', async (data, acknowledge) => {
-            try {
-                const groupId = groupIdSchema.parse(data?.groupId);
-
-                await getGroupChatRoom(groupId, user.userId);
-
-                acknowledge?.({
-                    status: 'success',
-                    message: 'Group chat access confirmed.'
-                });
-
-            } catch (error) {
-                acknowledge?.({
-                    status: 'error',
-                    message: 'Unable to access this group chat.'
-                });
-            }
-        });
-
-        // Retrieve chat history.
-        socket.on('group:history', async (data, acknowledge) => {
-            try {
-                const validated = historySchema.parse(data);
-
-                const messages = await getGroupChatHistory(
-                    validated.groupId,
-                    user.userId,
-                    validated.limit,
-                    validated.before || null
-                );
-
-                acknowledge?.({
-                    status: 'success',
-                    messages
-                });
-
-            } catch (error) {
-                acknowledge?.({
-                    status: 'error',
-                    message: 'Unable to retrieve group messages.'
-                });
-            }
-        });
-
-        // Save and distribute a new message.
-        socket.on('group:message', async (data, acknowledge) => {
-            try {
-                if (!canSendMessage(socket.id)) {
-                    return acknowledge?.({
-                        status: 'error',
-                        message: 'You are sending messages too quickly.'
-                    });
-                }
-
-                const validated = messageSchema.parse(data);
-
-                const message = await saveGroupMessage(
-                    validated.groupId,
-                    user.userId,
-                    validated.messageContent
-                );
-
-                // Retrieve only currently active group members.
-                const members = await pool.query(
-                    `SELECT student_id
-                     FROM group_members
-                     WHERE group_id = $1
-                       AND membership_status = 'active'`,
-                    [validated.groupId]
-                );
-
-                const broadcastMessage = {
-                    ...message,
-                    sender_name: user.fullName
-                };
-
-                // Send only to currently active group members.
-                for (const member of members.rows) {
-                    io.to(`user:${member.student_id}`).emit(
-                        'group:new-message',
-                        broadcastMessage
-                    );
-                }
-
-                acknowledge?.({
-                    status: 'success',
-                    message: broadcastMessage
-                });
-
-            } catch (error) {
-                acknowledge?.({
-                    status: 'error',
-                    message: 'Unable to send your message.'
-                });
-            }
-        });
-
-        socket.on('disconnect', () => {
-            messageTimestamps.delete(socket.id);
-
-            console.log(`Socket disconnected: ${user.userId}`);
-        });
-    });
-
-    return io;
+    return result.rows[0];
 };
