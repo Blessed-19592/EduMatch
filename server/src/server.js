@@ -1,14 +1,16 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import { randomBytes } from 'node:crypto';
+import { createServer } from 'node:http';
+
 import taskRoutes from './routes/taskRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
-import { createServer } from 'node:http';
-
-
 import { configureSocketServer } from './sockets/socketServer.js';
+
+import { csrfProtection } from './middleware/csrfProtection.js';
 
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
@@ -81,11 +83,6 @@ const PORT = Number(process.env.PORT) || 5000;
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-
-// Trust one reverse proxy in production.
-// Only use this when your deployment actually
-// has one trusted proxy in front of Express.
-
 if (isProduction) {
     app.set('trust proxy', 1);
 }
@@ -112,8 +109,6 @@ app.use(helmet());
 
 
 // Validate browser origins for state-changing requests.
-// Requests without an Origin header are allowed for
-// tools such as Postman and server-to-server clients.
 
 app.use((req, res, next) => {
     const origin = req.headers.origin;
@@ -127,6 +122,9 @@ app.use((req, res, next) => {
     if (safeMethods.includes(req.method)) {
         return next();
     }
+
+    // Allow requests from Postman and server-to-server clients.
+    // CSRF token validation still applies to these requests.
 
     if (!origin) {
         return next();
@@ -143,7 +141,9 @@ app.use((req, res, next) => {
 });
 
 
-// CORS configuration.
+// ======================================
+// CORS CONFIGURATION
+// ======================================
 
 app.use(cors({
     origin: allowedOrigin,
@@ -163,7 +163,9 @@ app.use(cors({
 }));
 
 
-// Request body limits.
+// ======================================
+// REQUEST BODY LIMITS
+// ======================================
 
 app.use(express.json({
     limit: '10kb'
@@ -205,8 +207,6 @@ app.use(sessionMiddleware);
 // RATE LIMITING
 // ======================================
 
-// General API protection.
-
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
 
@@ -221,9 +221,6 @@ const generalLimiter = rateLimit({
         message: 'Too many requests. Please try again later.'
     }
 });
-
-
-// Additional protection for authentication endpoints.
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -243,6 +240,47 @@ const authLimiter = rateLimit({
 app.use('/api', generalLimiter);
 
 app.use('/api/auth', authLimiter);
+
+
+// ======================================
+// CSRF TOKEN GENERATION
+// ======================================
+
+// Generate a random token tied to the current session.
+// The token must be retrieved before state-changing requests.
+
+app.get('/api/auth/csrf-token', (req, res, next) => {
+
+    if (!req.session.csrfToken) {
+        req.session.csrfToken = randomBytes(32).toString('hex');
+    }
+
+    // Prevent browsers and intermediaries from caching the token.
+    res.set('Cache-Control', 'no-store');
+
+    req.session.save((error) => {
+
+        if (error) {
+            return next(error);
+        }
+
+        res.status(200).json({
+            status: 'success',
+            csrfToken: req.session.csrfToken
+        });
+
+    });
+});
+
+
+// ======================================
+// CSRF PROTECTION
+// ======================================
+
+// Every state-changing API request must provide
+// the CSRF token belonging to its session.
+
+app.use('/api', csrfProtection);
 
 
 // ======================================
@@ -321,14 +359,11 @@ app.use((error, req, res, next) => {
 
     let message = error.message || 'An unexpected error occurred.';
 
-    // PostgreSQL unique constraint violation.
     if (error.code === '23505') {
         statusCode = 409;
         message = 'This record already exists.';
     }
 
-    // PostgreSQL foreign key, check constraint,
-    // and invalid UUID violations.
     else if (
         ['23503', '23514', '22P02'].includes(error.code)
     ) {
@@ -336,13 +371,11 @@ app.use((error, req, res, next) => {
         message = 'The submitted information is invalid.';
     }
 
-    // PostgreSQL custom business-rule violation.
     else if (error.code === 'P0001') {
         statusCode = 409;
         message = 'The requested operation conflicts with current group conditions.';
     }
 
-    // Never expose unexpected internal server errors.
     if (statusCode >= 500) {
         message = 'An unexpected server error occurred.';
     }
@@ -358,11 +391,9 @@ app.use((error, req, res, next) => {
 // SOCKET.IO INITIALIZATION
 // ======================================
 
-const sessionMiddlewareForSockets = sessionMiddleware;
-
 configureSocketServer(
     httpServer,
-    sessionMiddlewareForSockets
+    sessionMiddleware
 );
 
 
