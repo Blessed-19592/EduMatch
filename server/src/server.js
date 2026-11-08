@@ -1,3 +1,5 @@
+
+import studentProfileRoutes from './routes/studentProfileRoutes.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -292,7 +294,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupRoutes);
 
 app.use('/api/groups', taskRoutes);
-
+app.use('/api/students', studentProfileRoutes);
 
 // ======================================
 // HEALTH CHECK
