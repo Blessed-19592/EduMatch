@@ -6,7 +6,7 @@ import groupRoutes from './routes/groupRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
 import { createServer } from 'node:http';
-import { randomBytes } from 'node:crypto';
+
 
 import { configureSocketServer } from './sockets/socketServer.js';
 
