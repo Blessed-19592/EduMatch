@@ -1,7 +1,7 @@
+
 import express from 'express';
 import { z } from 'zod';
 
-import { requireAuth } from '../middleware/requireAuth.js';
 import { requireStudent } from '../middleware/requireRole.js';
 
 import {
@@ -37,7 +37,6 @@ const createGroupSchema = z.object({
 
 router.post(
     '/',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
@@ -74,7 +73,6 @@ router.post(
 
 router.get(
     '/',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
@@ -86,7 +84,7 @@ router.get(
             ]);
 
             const validation = scopeSchema.safeParse(
-                req.query.scope || 'university'
+                req.query.scope || 'course'
             );
 
             if (!validation.success) {
@@ -119,7 +117,6 @@ router.get(
 
 router.get(
     '/:groupId',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
@@ -154,7 +151,6 @@ router.get(
 
 router.post(
     '/:groupId/requests',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
@@ -197,7 +193,6 @@ router.post(
 
 router.get(
     '/:groupId/requests',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
@@ -233,7 +228,6 @@ router.get(
 
 router.patch(
     '/requests/:requestId',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
