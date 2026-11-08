@@ -1,7 +1,7 @@
+
 import express from 'express';
 import { z } from 'zod';
 
-import { requireAuth } from '../middleware/requireAuth.js';
 import { requireStudent } from '../middleware/requireRole.js';
 import { AppError } from '../utils/AppError.js';
 
@@ -30,26 +30,31 @@ const updateProgressSchema = z.object({
 }).strict();
 
 
-// Create a group task.
+// ======================================
+// CREATE GROUP TASK
+// ======================================
+
 router.post(
     '/:groupId/tasks',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
-            const groupId = uuidSchema.parse(req.params.groupId);
+            const groupIdValidation = uuidSchema.safeParse(
+                req.params.groupId
+            );
+
+            if (!groupIdValidation.success) {
+                throw new AppError('Invalid group ID.', 400);
+            }
 
             const validation = createTaskSchema.safeParse(req.body);
 
             if (!validation.success) {
-                throw new AppError(
-                    'Invalid task information.',
-                    400
-                );
+                throw new AppError('Invalid task information.', 400);
             }
 
             const task = await createGroupTask(
-                groupId,
+                groupIdValidation.data,
                 req.currentUser.userId,
                 validation.data
             );
@@ -59,7 +64,6 @@ router.post(
                 message: 'Task created successfully.',
                 task
             });
-
         } catch (error) {
             next(error);
         }
@@ -67,17 +71,25 @@ router.post(
 );
 
 
-// Retrieve all tasks belonging to a group.
+// ======================================
+// RETRIEVE GROUP TASKS
+// ======================================
+
 router.get(
     '/:groupId/tasks',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
-            const groupId = uuidSchema.parse(req.params.groupId);
+            const groupIdValidation = uuidSchema.safeParse(
+                req.params.groupId
+            );
+
+            if (!groupIdValidation.success) {
+                throw new AppError('Invalid group ID.', 400);
+            }
 
             const tasks = await getGroupTasks(
-                groupId,
+                groupIdValidation.data,
                 req.currentUser.userId
             );
 
@@ -86,7 +98,6 @@ router.get(
                 count: tasks.length,
                 tasks
             });
-
         } catch (error) {
             next(error);
         }
@@ -94,17 +105,25 @@ router.get(
 );
 
 
-// Retrieve task progress history.
+// ======================================
+// RETRIEVE TASK PROGRESS HISTORY
+// ======================================
+
 router.get(
     '/tasks/:taskId/progress',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
-            const taskId = uuidSchema.parse(req.params.taskId);
+            const taskIdValidation = uuidSchema.safeParse(
+                req.params.taskId
+            );
+
+            if (!taskIdValidation.success) {
+                throw new AppError('Invalid task ID.', 400);
+            }
 
             const history = await getTaskProgressHistory(
-                taskId,
+                taskIdValidation.data,
                 req.currentUser.userId
             );
 
@@ -113,7 +132,6 @@ router.get(
                 count: history.length,
                 history
             });
-
         } catch (error) {
             next(error);
         }
@@ -121,14 +139,22 @@ router.get(
 );
 
 
-// Update task progress.
+// ======================================
+// UPDATE TASK PROGRESS
+// ======================================
+
 router.patch(
     '/tasks/:taskId/progress',
-    requireAuth,
     requireStudent,
     async (req, res, next) => {
         try {
-            const taskId = uuidSchema.parse(req.params.taskId);
+            const taskIdValidation = uuidSchema.safeParse(
+                req.params.taskId
+            );
+
+            if (!taskIdValidation.success) {
+                throw new AppError('Invalid task ID.', 400);
+            }
 
             const validation = updateProgressSchema.safeParse(req.body);
 
@@ -140,7 +166,7 @@ router.patch(
             }
 
             const progress = await updateTaskProgress(
-                taskId,
+                taskIdValidation.data,
                 req.currentUser.userId,
                 validation.data.newStatus,
                 validation.data.progressNote
@@ -151,7 +177,6 @@ router.patch(
                 message: 'Task progress updated successfully.',
                 progress
             });
-
         } catch (error) {
             next(error);
         }
