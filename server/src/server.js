@@ -1,4 +1,5 @@
 
+import portfolioRoutes from './routes/portfolioRoutes.js';
 import skillInterestRoutes from './routes/skillInterestRoutes.js';
 import studentProfileRoutes from './routes/studentProfileRoutes.js';
 import dotenv from 'dotenv';
@@ -297,6 +298,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/groups', taskRoutes);
 app.use('/api/students', studentProfileRoutes);
 app.use('/api', skillInterestRoutes);
+app.use('/api/students', portfolioRoutes);
 
 // ======================================
 // HEALTH CHECK
