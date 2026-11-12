@@ -154,7 +154,15 @@ export const replaceStudentSkills = async (userId, skills) => {
                 )
              JOIN skills s
                 ON s.skill_id = submitted.skill_id`,
-            [userId, JSON.stringify(skills)]
+            [
+    userId,
+    JSON.stringify(
+        skills.map(({ skillId, proficiencyLevel }) => ({
+            skill_id: skillId,
+            proficiency_level: proficiencyLevel
+        }))
+    )
+]
         );
 
         // Ensure every submitted skill was valid.
@@ -244,6 +252,104 @@ export const replaceStudentInterests = async (userId, interestIds) => {
         await client.query('COMMIT');
 
         return await getStudentInterests(userId);
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+
+    } finally {
+        client.release();
+    }
+};
+
+// ======================================
+// GET COLLABORATION INTENTIONS CATALOG
+// ======================================
+
+export const getCollaborationIntentions = async () => {
+    const result = await pool.query(
+        `SELECT
+            intention_id,
+            intention_code,
+            intention_name,
+            description
+         FROM collaboration_intentions
+         ORDER BY intention_name`
+    );
+
+    return result.rows;
+};
+
+
+// ======================================
+// GET STUDENT COLLABORATION INTENTIONS
+// ======================================
+
+export const getStudentIntentions = async (userId) => {
+    const result = await pool.query(
+        `SELECT
+            ci.intention_id,
+            ci.intention_code,
+            ci.intention_name,
+            ci.description,
+            si.created_at
+         FROM student_intentions si
+         JOIN collaboration_intentions ci
+            ON ci.intention_id = si.intention_id
+         WHERE si.student_id = $1
+         ORDER BY ci.intention_name`,
+        [userId]
+    );
+
+    return result.rows;
+};
+
+
+// ======================================
+// REPLACE STUDENT COLLABORATION INTENTIONS
+// ======================================
+
+export const replaceStudentIntentions = async (
+    userId,
+    intentionIds
+) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        await lockStudentProfile(client, userId);
+
+        await client.query(
+            `DELETE FROM student_intentions
+             WHERE student_id = $1`,
+            [userId]
+        );
+
+        const result = await client.query(
+            `INSERT INTO student_intentions (
+                student_id,
+                intention_id
+             )
+             SELECT
+                $1,
+                submitted.intention_id
+             FROM unnest($2::uuid[]) AS submitted(intention_id)
+             JOIN collaboration_intentions ci
+                ON ci.intention_id = submitted.intention_id`,
+            [userId, intentionIds]
+        );
+
+        if (result.rowCount !== intentionIds.length) {
+            throw new AppError(
+                'One or more selected collaboration intentions do not exist.',
+                400
+            );
+        }
+
+        await client.query('COMMIT');
+
+        return await getStudentIntentions(userId);
 
     } catch (error) {
         await client.query('ROLLBACK');
