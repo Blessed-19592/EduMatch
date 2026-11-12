@@ -217,6 +217,88 @@ export const deleteAssessmentEvidence = async (
   }
 };
 
+export const createSelfReportedAssessment = async (userId, skillId) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    await lockStudentProfile(client, userId);
+
+    // Confirm that the student has this skill on their profile.
+    const skill = await client.query(
+      `SELECT skill_id
+       FROM student_skills
+       WHERE student_id = $1
+         AND skill_id = $2
+       FOR UPDATE`,
+      [userId, skillId]
+    );
+
+    if (!skill.rows.length) {
+      throw new AppError(
+        'Add this skill to your profile before creating an assessment.',
+        400
+      );
+    }
+
+    // Create a self-reported assessment.
+    // The unique partial index prevents duplicates.
+    const result = await client.query(
+      `INSERT INTO skill_assessments (
+         student_id,
+         skill_id,
+         assessment_method,
+         assessment_status,
+         assessment_summary
+       )
+       VALUES (
+         $1,
+         $2,
+         'self_reported',
+         'pending',
+         'Student-declared skill. Evidence has not been independently assessed.'
+       )
+       ON CONFLICT (student_id, skill_id)
+       WHERE assessment_method = 'self_reported'
+       DO NOTHING
+       RETURNING *`,
+      [userId, skillId]
+    );
+
+    let assessment;
+    let alreadyExists = false;
+
+    if (result.rows.length) {
+      assessment = result.rows[0];
+    } else {
+      const existing = await client.query(
+        `SELECT *
+         FROM skill_assessments
+         WHERE student_id = $1
+           AND skill_id = $2
+           AND assessment_method = 'self_reported'`,
+        [userId, skillId]
+      );
+
+      assessment = existing.rows[0];
+      alreadyExists = true;
+    }
+
+    await client.query('COMMIT');
+
+    return {
+      assessment,
+      alreadyExists
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 export const createSelfReportedAssessment = async (
   userId,
   skillId
