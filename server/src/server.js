@@ -1,4 +1,5 @@
 
+import assessmentEvidenceRoutes from './routes/assessmentEvidenceRoutes.js';
 import portfolioRoutes from './routes/portfolioRoutes.js';
 import skillInterestRoutes from './routes/skillInterestRoutes.js';
 import studentProfileRoutes from './routes/studentProfileRoutes.js';
@@ -299,6 +300,7 @@ app.use('/api/groups', taskRoutes);
 app.use('/api/students', studentProfileRoutes);
 app.use('/api', skillInterestRoutes);
 app.use('/api/students', portfolioRoutes);
+app.use('/api/students', assessmentEvidenceRoutes);
 
 // ======================================
 // HEALTH CHECK

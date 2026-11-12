@@ -1,3 +1,7 @@
+
+import {
+  createSelfReportedAssessment
+} from '../services/assessmentEvidenceService.js';
 import express from 'express';
 import { z } from 'zod';
 
@@ -23,16 +27,25 @@ const evidenceTypes = [
   'video_presentation',
   'other'
 ];
+const safeUrl = z
+  .string()
+  .url()
+  .max(2048, 'URL must not exceed 2048 characters.')
+  .refine(
+    (value) => {
+      try {
+        const parsedUrl = new URL(value);
 
-const safeUrl = z.string().url().refine((value) => {
-  try {
-    return ['http:', 'https:'].includes(
-      new URL(value).protocol
-    );
-  } catch {
-    return false;
-  }
-}, 'Only HTTP and HTTPS URLs are allowed.');
+        return (
+          ['http:', 'https:'].includes(parsedUrl.protocol) &&
+          Boolean(parsedUrl.hostname)
+        );
+      } catch {
+        return false;
+      }
+    },
+    'Only valid HTTP and HTTPS URLs are allowed.'
+  );
 
 const evidenceSchema = z.object({
   portfolioId: z.string().uuid().nullable().optional(),
@@ -51,6 +64,10 @@ const evidenceSchema = z.object({
     path: ['evidenceUrl']
   }
 );
+
+const createAssessmentSchema = z.object({
+  skillId: z.string().uuid()
+}).strict();
 
 const validateUuid = (req, res, next) => {
   const ids = [
@@ -75,6 +92,37 @@ router.get('/me/assessments', async (req, res, next) => {
     );
 
     res.json({ assessments });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/students/me/assessments
+router.post('/me/assessments', async (req, res, next) => {
+  try {
+    const parsed = createAssessmentSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: 'Invalid assessment information.',
+        errors: parsed.error.issues
+      });
+    }
+
+    const result = await createSelfReportedAssessment(
+      req.session.user.userId,
+      parsed.data.skillId
+    );
+
+    res.status(
+      result.alreadyExists ? 200 : 201
+    ).json({
+      message: result.alreadyExists
+        ? 'Self-reported assessment already exists.'
+        : 'Self-reported assessment created successfully.',
+      ...result
+    });
+
   } catch (error) {
     next(error);
   }

@@ -100,13 +100,24 @@ export const createAssessmentEvidence = async (
     await lockStudentProfile(client, userId);
 
     const assessment = await client.query(
-      `SELECT assessment_id
-       FROM skill_assessments
-       WHERE assessment_id = $1
-         AND student_id = $2
-       FOR UPDATE`,
-      [assessmentId, userId]
-    );
+  `SELECT assessment_id, assessment_method
+   FROM skill_assessments
+   WHERE assessment_id = $1
+     AND student_id = $2
+   FOR UPDATE`,
+  [assessmentId, userId]
+);
+
+if (!assessment.rows.length) {
+  throw new AppError('Assessment not found.', 404);
+}
+
+if (assessment.rows[0].assessment_method !== 'self_reported') {
+  throw new AppError(
+    'You cannot modify evidence associated with an independently assessed record.',
+    403
+  );
+}
 
     if (!assessment.rows.length) {
       throw new AppError(
@@ -181,6 +192,7 @@ export const deleteAssessmentEvidence = async (
        WHERE ae.assessment_id = sa.assessment_id
          AND ae.evidence_id = $1
          AND sa.student_id = $2
+         AND sa.assessment_method = 'self_reported'
        RETURNING ae.evidence_id`,
       [evidenceId, userId]
     );
@@ -197,6 +209,96 @@ export const deleteAssessmentEvidence = async (
     return {
       message: 'Evidence deleted successfully.'
     };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const createSelfReportedAssessment = async (
+  userId,
+  skillId
+) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    await lockStudentProfile(client, userId);
+
+    // Lock the student's skill record to prevent duplicate
+    // assessment creation from concurrent requests.
+    const skill = await client.query(
+      `SELECT skill_id
+       FROM student_skills
+       WHERE student_id = $1
+         AND skill_id = $2
+       FOR UPDATE`,
+      [userId, skillId]
+    );
+
+    if (!skill.rows.length) {
+      throw new AppError(
+        'Add this skill to your profile before creating an assessment.',
+        400
+      );
+    }
+
+    // Reuse an existing self-reported assessment.
+    const existing = await client.query(
+      `SELECT assessment_id,
+              skill_id,
+              assessment_method,
+              assessment_status,
+              assessment_summary,
+              created_at
+       FROM skill_assessments
+       WHERE student_id = $1
+         AND skill_id = $2
+         AND assessment_method = 'self_reported'
+       ORDER BY created_at DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [userId, skillId]
+    );
+
+    if (existing.rows.length) {
+      await client.query('COMMIT');
+
+      return {
+        assessment: existing.rows[0],
+        alreadyExists: true
+      };
+    }
+
+    const result = await client.query(
+      `INSERT INTO skill_assessments (
+         student_id,
+         skill_id,
+         assessment_method,
+         assessment_status,
+         assessment_summary
+       )
+       VALUES (
+         $1,
+         $2,
+         'self_reported',
+         'pending',
+         'Student-declared skill. Evidence has not been independently assessed.'
+       )
+       RETURNING *`,
+      [userId, skillId]
+    );
+
+    await client.query('COMMIT');
+
+    return {
+      assessment: result.rows[0],
+      alreadyExists: false
+    };
+
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
