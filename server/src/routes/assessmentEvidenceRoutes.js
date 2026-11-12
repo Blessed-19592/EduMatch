@@ -12,6 +12,7 @@ import {
   getAssessmentEvidence,
   createAssessmentEvidence,
   deleteAssessmentEvidence
+
 } from '../services/assessmentEvidenceService.js';
 
 const router = express.Router();
@@ -66,8 +67,9 @@ const evidenceSchema = z.object({
 );
 
 const createAssessmentSchema = z.object({
-  skillId: z.string().uuid()
+  skillId: z.string().uuid('Invalid skill ID.')
 }).strict();
+
 
 const validateUuid = (req, res, next) => {
   const ids = [
@@ -100,33 +102,31 @@ router.get('/me/assessments', async (req, res, next) => {
 // POST /api/students/me/assessments
 router.post('/me/assessments', async (req, res, next) => {
   try {
-    const parsed = createAssessmentSchema.safeParse(req.body);
+    const validation = createAssessmentSchema.safeParse(req.body);
 
-    if (!parsed.success) {
+    if (!validation.success) {
       return res.status(400).json({
-        message: 'Invalid assessment information.',
-        errors: parsed.error.issues
+        message: 'Invalid assessment data.',
+        errors: validation.error.flatten()
       });
     }
 
     const result = await createSelfReportedAssessment(
       req.session.user.userId,
-      parsed.data.skillId
+      validation.data.skillId
     );
 
-    res.status(
-      result.alreadyExists ? 200 : 201
-    ).json({
+    return res.status(result.alreadyExists ? 200 : 201).json({
       message: result.alreadyExists
         ? 'Self-reported assessment already exists.'
         : 'Self-reported assessment created successfully.',
       ...result
     });
-
   } catch (error) {
     next(error);
   }
 });
+
 
 // GET /api/students/me/assessments/:assessmentId/evidence
 router.get(
