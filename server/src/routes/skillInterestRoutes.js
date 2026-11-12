@@ -10,6 +10,9 @@ import {
     replaceStudentSkills,
     getStudentInterests,
     replaceStudentInterests
+    getCollaborationIntentions,
+    getStudentIntentions,
+    replaceStudentIntentions
 } from '../services/skillInterestService.js';
 
 const router = express.Router();
@@ -62,6 +65,16 @@ const interestsSchema = z.object({
     }
 });
 
+const intentionsSchema = z.object({
+    intentionIds: z.array(z.string().uuid())
+        .max(4)
+}).strict().refine(
+    (data) => new Set(data.intentionIds).size === data.intentionIds.length,
+    {
+        message: 'Duplicate collaboration intentions are not allowed.',
+        path: ['intentionIds']
+    }
+);
 const catalogQuerySchema = z.object({
     search: z.string().trim().max(80).optional(),
     category: z.string().trim().min(1).max(100).optional()
@@ -259,5 +272,68 @@ router.put('/me/interests', async (req, res, next) => {
     }
 });
 
+// ======================================
+// COLLABORATION INTENTIONS
+// ======================================
+
+// GET /api/catalog/collaboration-intentions
+router.get('/catalog/collaboration-intentions', async (req, res, next) => {
+    try {
+        const intentions = await getCollaborationIntentions();
+
+        res.status(200).json({
+            status: 'success',
+            intentions
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+
+// GET /api/me/intentions
+router.get('/me/intentions', async (req, res, next) => {
+    try {
+        const intentions = await getStudentIntentions(
+            req.currentUser.userId
+        );
+
+        res.status(200).json({
+            status: 'success',
+            intentions
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+
+// PUT /api/me/intentions
+router.put('/me/intentions', async (req, res, next) => {
+    try {
+        const validation = intentionsSchema.safeParse(req.body);
+
+        if (!validation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid collaboration intentions.',
+                errors: validation.error.issues
+            });
+        }
+
+        const intentions = await replaceStudentIntentions(
+            req.currentUser.userId,
+            validation.data.intentionIds
+        );
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Collaboration intentions updated successfully.',
+            intentions
+        });
+    } catch (error) {
+        next(error);
+    }
+});
 
 export default router;
