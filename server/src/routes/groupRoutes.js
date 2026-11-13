@@ -26,8 +26,31 @@ const createGroupSchema = z.object({
     expectedDeliverables: z.string().trim().min(10).max(5000),
     memberResponsibilities: z.string().trim().min(10).max(5000),
     memberExpectations: z.string().trim().min(10).max(5000),
-    requiredSkillIds: z.array(uuidSchema).max(50).default([])
-}).strict();
+    requiredSkillIds: z.array(uuidSchema).max(50).default([]),
+
+    acceptsAllYears: z.boolean().default(true),
+
+    allowedYears: z.array(
+        z.number().int().min(1).max(4)
+    ).max(4).default([]),
+
+}).strict().superRefine((data, ctx) => {
+    if (data.acceptsAllYears && data.allowedYears.length > 0) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['allowedYears'],
+            message: 'Allowed years must be empty when accepting all years.'
+        });
+    }
+
+    if (!data.acceptsAllYears && data.allowedYears.length === 0) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['allowedYears'],
+            message: 'Select at least one academic year.'
+        });
+    }
+});
 
 // ======================================
 // CREATE GROUP
