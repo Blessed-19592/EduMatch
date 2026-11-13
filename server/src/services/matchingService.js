@@ -178,8 +178,7 @@ const getStudentData = async (studentId) => {
 
     return result.rows[0] ?? null;
 };
-
-const getStudentCandidates = async (studentId) => {
+const getStudentCandidates = async (studentId, years = []) => {
     const result = await pool.query(
         `SELECT
             u.user_id AS "studentId",
@@ -230,21 +229,25 @@ const getStudentCandidates = async (studentId) => {
                 SELECT jsonb_build_object(
                     'experienceLevel', spp.preferred_experience_level,
                     'commitmentLevel', spp.preferred_commitment_level,
+
                     'skills', COALESCE((
                         SELECT jsonb_agg(pps.skill_id)
                         FROM preferred_partner_skills pps
                         WHERE pps.preference_id = spp.preference_id
                     ), '[]'::jsonb),
+
                     'faculties', COALESCE((
                         SELECT jsonb_agg(ppf.faculty_id)
                         FROM preferred_partner_faculties ppf
                         WHERE ppf.preference_id = spp.preference_id
                     ), '[]'::jsonb),
+
                     'departments', COALESCE((
                         SELECT jsonb_agg(ppd.department_id)
                         FROM preferred_partner_departments ppd
                         WHERE ppd.preference_id = spp.preference_id
                     ), '[]'::jsonb),
+
                     'courses', COALESCE((
                         SELECT jsonb_agg(ppc.course_id)
                         FROM preferred_partner_courses ppc
@@ -273,22 +276,28 @@ const getStudentCandidates = async (studentId) => {
             ON f.faculty_id = d.faculty_id
 
         WHERE u.user_id <> $1
-  AND u.role = 'student'
-  AND u.account_status = 'active'
-  AND sp.collaboration_status <> 'unavailable'
+          AND u.role = 'student'
+          AND u.account_status = 'active'
+          AND sp.collaboration_status IS DISTINCT FROM 'unavailable'
 
-  AND NOT EXISTS (
-      SELECT 1
-      FROM group_members current_member
-      JOIN group_members candidate_member
-          ON candidate_member.group_id = current_member.group_id
-      WHERE current_member.student_id = $1
-        AND candidate_member.student_id = u.user_id
-        AND current_member.membership_status = 'active'
-        AND candidate_member.membership_status = 'active'
-  )
-         `,
-        [studentId]
+          AND (
+              cardinality($2::smallint[]) = 0
+              OR sp.year_of_study = ANY($2::smallint[])
+          )
+
+          AND NOT EXISTS (
+              SELECT 1
+              FROM group_members current_member
+
+              JOIN group_members candidate_member
+                  ON candidate_member.group_id = current_member.group_id
+
+              WHERE current_member.student_id = $1
+                AND candidate_member.student_id = u.user_id
+                AND current_member.membership_status = 'active'
+                AND candidate_member.membership_status = 'active'
+          )`,
+        [studentId, years]
     );
 
     return result.rows;

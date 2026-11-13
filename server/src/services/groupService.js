@@ -523,10 +523,13 @@ export const discoverGroups = async (
             ) AS "allowedYears",
 
             COALESCE(
-                ARRAY_AGG(DISTINCT member_profile.year_of_study)
-                    FILTER (WHERE member_profile.year_of_study IS NOT NULL),
-                '{}'
-            ) AS "memberYears",
+    ARRAY_AGG(DISTINCT member_profile.year_of_study)
+    FILTER (
+        WHERE gm.membership_status = 'active'
+        AND member_profile.year_of_study IS NOT NULL
+    ),
+    '{}'
+) AS "memberYears",
 
             ci.intention_name,
             u.full_name AS creator_name,
