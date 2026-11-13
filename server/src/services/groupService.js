@@ -14,13 +14,40 @@ export const createGroup = async (userId, groupData) => {
         expectedDeliverables,
         memberResponsibilities,
         memberExpectations,
-        requiredSkillIds = []
+        requiredSkillIds = [],
+        acceptsAllYears = true,
+        allowedYears = []
     } = groupData;
 
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
+
+        // Validate year eligibility selections.
+        const uniqueYears = [...new Set(allowedYears)];
+
+        if (
+            !uniqueYears.every(
+                year => Number.isInteger(year) && year >= 1 && year <= 4
+            )
+        ) {
+            throw new AppError('Invalid academic year selection.', 400);
+        }
+
+        if (acceptsAllYears && uniqueYears.length > 0) {
+            throw new AppError(
+                'Do not select individual years when accepting all years.',
+                400
+            );
+        }
+
+        if (!acceptsAllYears && uniqueYears.length === 0) {
+            throw new AppError(
+                'Select at least one academic year.',
+                400
+            );
+        }
 
         // Validate the collaboration intention.
         const intention = await client.query(
@@ -61,9 +88,10 @@ export const createGroup = async (userId, groupData) => {
                 objectives,
                 expected_deliverables,
                 member_responsibilities,
-                member_expectations
+                member_expectations,
+                accepts_all_years
              )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              RETURNING *`,
             [
                 groupName.trim(),
@@ -74,11 +102,34 @@ export const createGroup = async (userId, groupData) => {
                 objectives.trim(),
                 expectedDeliverables.trim(),
                 memberResponsibilities.trim(),
-                memberExpectations.trim()
+                memberExpectations.trim(),
+                acceptsAllYears
             ]
         );
 
         const group = groupResult.rows[0];
+
+        // Save the group's permitted academic years.
+        if (!acceptsAllYears) {
+            const values = [];
+            const parameters = [];
+
+            uniqueYears.forEach((year, index) => {
+                const offset = index * 2;
+
+                values.push(`($${offset + 1}, $${offset + 2})`);
+                parameters.push(group.group_id, year);
+            });
+
+            await client.query(
+                `INSERT INTO group_allowed_years (
+                    group_id,
+                    year_of_study
+                 )
+                 VALUES ${values.join(', ')}`,
+                parameters
+            );
+        }
 
         // Add required skills.
         if (uniqueSkillIds.length > 0) {
@@ -115,7 +166,6 @@ export const createGroup = async (userId, groupData) => {
         client.release();
     }
 };
-
 // Submit a request to join an open group.
 export const submitMembershipRequest = async (
     groupId,
@@ -128,7 +178,7 @@ export const submitMembershipRequest = async (
         await client.query('BEGIN');
 
         const groupResult = await client.query(
-            `SELECT group_id, group_status, created_by
+            `SELECT group_id, group_status, created_by, accepts_all_years
              FROM student_groups
              WHERE group_id = $1
              FOR UPDATE`,
@@ -147,6 +197,43 @@ export const submitMembershipRequest = async (
 
         if (group.created_by === studentId) {
             throw new AppError('You cannot request to join your own group.', 400);
+        }
+
+        // Check the applicant's academic year.
+        if (!group.accepts_all_years) {
+            const studentResult = await client.query(
+                `SELECT year_of_study
+                 FROM student_profiles
+                 WHERE user_id = $1`,
+                [studentId]
+            );
+
+            if (
+                studentResult.rows.length === 0 ||
+                studentResult.rows[0].year_of_study == null
+            ) {
+                throw new AppError(
+                    'Your academic year must be available in your profile before requesting membership.',
+                    400
+                );
+            }
+
+            const studentYear = studentResult.rows[0].year_of_study;
+
+            const allowedYearResult = await client.query(
+                `SELECT 1
+                 FROM group_allowed_years
+                 WHERE group_id = $1
+                   AND year_of_study = $2`,
+                [groupId, studentYear]
+            );
+
+            if (allowedYearResult.rows.length === 0) {
+                throw new AppError(
+                    'This group is not accepting membership requests from students in your year of study.',
+                    403
+                );
+            }
         }
 
         const membership = await client.query(
