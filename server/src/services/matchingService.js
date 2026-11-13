@@ -824,7 +824,10 @@ export const getGroupMatches = async (
     studentId,
     { limit = 20 } = {}
 ) => {
-    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
+    const safeLimit = Math.min(
+        Math.max(Number(limit) || 20, 1),
+        50
+    );
 
     const student = await getStudentData(studentId);
 
@@ -834,9 +837,21 @@ export const getGroupMatches = async (
         throw error;
     }
 
-    const groups = await getGroupCandidates(studentId);
+    if (!student.yearOfStudy) {
+        const error = new Error(
+            'Your academic year is unavailable. Please update your profile.'
+        );
 
-    const matches = groups.map((group) => {
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const groups = await getGroupCandidates(
+        studentId,
+        student.yearOfStudy
+    );
+
+    const matches = groups.map(group => {
         const factors = {
             intentions: getGroupIntentionScore(student, group),
             skills: getGroupSkillScore(student, group),
@@ -852,34 +867,53 @@ export const getGroupMatches = async (
         const reasons = [];
 
         if (factors.intentions === 100) {
-            reasons.push('This group shares one of your collaboration intentions.');
+            reasons.push(
+                'This group shares one of your collaboration intentions.'
+            );
         }
 
         if (factors.skills >= 50) {
-            reasons.push('Your skills cover several of this group’s requirements.');
+            reasons.push(
+                'Your skills cover several of this group’s requirements.'
+            );
         }
 
         if (factors.academics >= 60) {
-            reasons.push('The group has a related academic background.');
+            reasons.push(
+                'The group has a related academic background.'
+            );
         }
 
         if (factors.commitment >= 70) {
-            reasons.push('Your commitment level is compatible with the group.');
+            reasons.push(
+                'Your commitment level is compatible with the group.'
+            );
         }
 
         return {
             groupId: group.groupId,
             groupName: group.groupName,
             description: group.description,
+
             intention: group.intentionName,
+
             ownerName: group.ownerName,
+
             course: group.courseName,
             department: group.departmentName,
             faculty: group.facultyName,
+
             memberCount: group.memberCount,
             maxMembers: group.maxMembers,
-            availableSlots: group.maxMembers - group.memberCount,
+
+            availableSlots:
+                group.maxMembers - group.memberCount,
+
+            acceptsAllYears: group.acceptsAllYears,
+            allowedYears: group.allowedYears,
+
             requiredSkills: group.requiredSkills,
+
             score,
             reasons
         };
