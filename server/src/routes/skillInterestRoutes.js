@@ -9,7 +9,7 @@ import {
     getStudentSkills,
     replaceStudentSkills,
     getStudentInterests,
-    replaceStudentInterests
+    replaceStudentInterests,
     getCollaborationIntentions,
     getStudentIntentions,
     replaceStudentIntentions

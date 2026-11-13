@@ -20,16 +20,14 @@ const uuidSchema = z.string().uuid();
 const createGroupSchema = z.object({
     groupName: z.string().trim().min(3).max(100),
     description: z.string().trim().max(3000).optional(),
-    maxMembers: z.number().int().min(2).max(20),
+    maxMembers: z.number().int().min(2).max(15),
     intentionId: uuidSchema,
-    collaborationTypeId: uuidSchema,
     objectives: z.string().trim().min(10).max(5000),
     expectedDeliverables: z.string().trim().min(10).max(5000),
     memberResponsibilities: z.string().trim().min(10).max(5000),
     memberExpectations: z.string().trim().min(10).max(5000),
     requiredSkillIds: z.array(uuidSchema).max(50).default([])
 }).strict();
-
 
 // ======================================
 // CREATE GROUP
