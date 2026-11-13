@@ -372,7 +372,7 @@ export const respondToMembershipRequest = async (
 
         // Lock the group to serialize membership decisions.
         const groupResult = await client.query(
-            `SELECT group_id, group_status
+            `SELECT group_id, group_status, accepts_all_years
              FROM student_groups
              WHERE group_id = $1
              FOR UPDATE`,
@@ -391,6 +391,44 @@ export const respondToMembershipRequest = async (
                     'This group is no longer accepting members.',
                     409
                 );
+            }
+
+            // Recheck the applicant's academic year.
+            if (!group.accepts_all_years) {
+                const studentResult = await client.query(
+                    `SELECT year_of_study
+                     FROM student_profiles
+                     WHERE user_id = $1
+                     FOR SHARE`,
+                    [request.student_id]
+                );
+
+                if (
+                    studentResult.rows.length === 0 ||
+                    studentResult.rows[0].year_of_study == null
+                ) {
+                    throw new AppError(
+                        "The applicant's academic year is unavailable.",
+                        409
+                    );
+                }
+
+                const studentYear = studentResult.rows[0].year_of_study;
+
+                const allowedYearResult = await client.query(
+                    `SELECT 1
+                     FROM group_allowed_years
+                     WHERE group_id = $1
+                       AND year_of_study = $2`,
+                    [request.group_id, studentYear]
+                );
+
+                if (allowedYearResult.rows.length === 0) {
+                    throw new AppError(
+                        'The applicant no longer meets this group’s year-of-study requirements.',
+                        409
+                    );
+                }
             }
 
             await client.query(
@@ -438,14 +476,30 @@ export const respondToMembershipRequest = async (
         client.release();
     }
 };
-
 // Discover open groups within the student's academic scope.
-// Discover open groups within the student's academic scope.
-export const discoverGroups = async (studentId, scope = 'university') => {
+export const discoverGroups = async (
+    studentId,
+    scope = 'university',
+    memberYears = []
+) => {
     const validScopes = ['course', 'department', 'school', 'university'];
 
     if (!validScopes.includes(scope)) {
         throw new AppError('Invalid discovery scope.', 400);
+    }
+
+    if (!Array.isArray(memberYears)) {
+        throw new AppError('Invalid academic year filter.', 400);
+    }
+
+    const uniqueMemberYears = [...new Set(memberYears)];
+
+    if (
+        !uniqueMemberYears.every(
+            year => Number.isInteger(year) && year >= 1 && year <= 4
+        )
+    ) {
+        throw new AppError('Invalid academic year filter.', 400);
     }
 
     const result = await pool.query(
@@ -460,6 +514,20 @@ export const discoverGroups = async (studentId, scope = 'university') => {
             sg.member_responsibilities,
             sg.member_expectations,
             sg.intention_id,
+            sg.accepts_all_years AS "acceptsAllYears",
+
+            COALESCE(
+                ARRAY_AGG(DISTINCT gay.year_of_study)
+                    FILTER (WHERE gay.year_of_study IS NOT NULL),
+                '{}'
+            ) AS "allowedYears",
+
+            COALESCE(
+                ARRAY_AGG(DISTINCT member_profile.year_of_study)
+                    FILTER (WHERE member_profile.year_of_study IS NOT NULL),
+                '{}'
+            ) AS "memberYears",
+
             ci.intention_name,
             u.full_name AS creator_name,
             c.name AS course_name,
@@ -472,7 +540,7 @@ export const discoverGroups = async (studentId, scope = 'university') => {
 
             COALESCE(
                 ARRAY_AGG(DISTINCT s.skill_name)
-                FILTER (WHERE s.skill_id IS NOT NULL),
+                    FILTER (WHERE s.skill_id IS NOT NULL),
                 '{}'
             ) AS required_skills,
 
@@ -484,94 +552,113 @@ export const discoverGroups = async (studentId, scope = 'university') => {
                   AND cr.request_status = 'pending'
             ) AS has_pending_request
 
-         FROM student_groups sg
+        FROM student_groups sg
 
-         JOIN student_profiles creator
+        JOIN student_profiles creator
             ON creator.user_id = sg.created_by
 
-         JOIN users u
+        JOIN users u
             ON u.user_id = sg.created_by
 
-         LEFT JOIN registry_students rs
+        LEFT JOIN registry_students rs
             ON rs.registry_student_id = creator.registry_student_id
 
-         LEFT JOIN courses c
+        LEFT JOIN courses c
             ON c.course_id = rs.course_id
 
-         LEFT JOIN departments d
+        LEFT JOIN departments d
             ON d.department_id = c.department_id
 
-         LEFT JOIN faculties f
+        LEFT JOIN faculties f
             ON f.faculty_id = d.faculty_id
 
-         LEFT JOIN collaboration_intentions ci
+        LEFT JOIN collaboration_intentions ci
             ON ci.intention_id = sg.intention_id
 
-         LEFT JOIN group_members gm
+        LEFT JOIN group_members gm
             ON gm.group_id = sg.group_id
 
-         LEFT JOIN group_required_skills grs
+        LEFT JOIN student_profiles member_profile
+            ON member_profile.user_id = gm.student_id
+
+        LEFT JOIN group_allowed_years gay
+            ON gay.group_id = sg.group_id
+
+        LEFT JOIN group_required_skills grs
             ON grs.group_id = sg.group_id
 
-         LEFT JOIN skills s
+        LEFT JOIN skills s
             ON s.skill_id = grs.skill_id
 
-         WHERE sg.group_status = 'open'
+        WHERE sg.group_status = 'open'
+          AND sg.created_by <> $1
 
-           AND sg.created_by <> $1
+          AND NOT EXISTS (
+              SELECT 1
+              FROM group_members existing
+              WHERE existing.group_id = sg.group_id
+                AND existing.student_id = $1
+                AND existing.membership_status = 'active'
+          )
 
-           AND NOT EXISTS (
-                SELECT 1
-                FROM group_members existing
-                WHERE existing.group_id = sg.group_id
-                  AND existing.student_id = $1
-                  AND existing.membership_status = 'active'
-           )
+          AND (
+              $2 = 'university'
 
-           AND (
-                $2 = 'university'
+              OR (
+                  $2 = 'school'
+                  AND f.faculty_id = (
+                      SELECT d2.faculty_id
+                      FROM student_profiles sp2
+                      JOIN registry_students rs2
+                          ON rs2.registry_student_id = sp2.registry_student_id
+                      JOIN courses c2
+                          ON c2.course_id = rs2.course_id
+                      JOIN departments d2
+                          ON d2.department_id = c2.department_id
+                      WHERE sp2.user_id = $1
+                  )
+              )
 
-                OR (
-                    $2 = 'school'
-                    AND f.faculty_id = (
-                        SELECT d2.faculty_id
-                        FROM student_profiles sp2
-                        JOIN registry_students rs2
-                            ON rs2.registry_student_id = sp2.registry_student_id
-                        JOIN courses c2
-                            ON c2.course_id = rs2.course_id
-                        JOIN departments d2
-                            ON d2.department_id = c2.department_id
-                        WHERE sp2.user_id = $1
-                    )
-                )
+              OR (
+                  $2 = 'department'
+                  AND d.department_id = (
+                      SELECT c2.department_id
+                      FROM student_profiles sp2
+                      JOIN registry_students rs2
+                          ON rs2.registry_student_id = sp2.registry_student_id
+                      JOIN courses c2
+                          ON c2.course_id = rs2.course_id
+                      WHERE sp2.user_id = $1
+                  )
+              )
 
-                OR (
-                    $2 = 'department'
-                    AND d.department_id = (
-                        SELECT c2.department_id
-                        FROM student_profiles sp2
-                        JOIN registry_students rs2
-                            ON rs2.registry_student_id = sp2.registry_student_id
-                        JOIN courses c2
-                            ON c2.course_id = rs2.course_id
-                        WHERE sp2.user_id = $1
-                    )
-                )
+              OR (
+                  $2 = 'course'
+                  AND c.course_id = (
+                      SELECT rs2.course_id
+                      FROM student_profiles sp2
+                      JOIN registry_students rs2
+                          ON rs2.registry_student_id = sp2.registry_student_id
+                      WHERE sp2.user_id = $1
+                  )
+              )
+          )
 
-                OR (
-                    $2 = 'course'
-                    AND c.course_id = (
-                        SELECT rs2.course_id
-                        FROM student_profiles sp2
-                        JOIN registry_students rs2
-                            ON rs2.registry_student_id = sp2.registry_student_id
-                        WHERE sp2.user_id = $1
-                    )
-                )
-           )
+          AND (
+              cardinality($3::smallint[]) = 0
+              OR EXISTS (
+                  SELECT 1
+                  FROM group_members filtered_member
+                  JOIN student_profiles filtered_profile
+                      ON filtered_profile.user_id = filtered_member.student_id
+                  WHERE filtered_member.group_id = sg.group_id
+                    AND filtered_member.membership_status = 'active'
+                    AND filtered_profile.year_of_study =
+                        ANY($3::smallint[])
+              )
+          )
 
-         GROUP BY
+        GROUP BY
             sg.group_id,
             ci.intention_name,
             u.full_name,
@@ -579,15 +666,12 @@ export const discoverGroups = async (studentId, scope = 'university') => {
             d.name,
             f.name
 
-         ORDER BY sg.created_at DESC`,
-
-        [studentId, scope]
+        ORDER BY sg.created_at DESC`,
+        [studentId, scope, uniqueMemberYears]
     );
 
     return result.rows;
 };
-
-
 // Retrieve details of a specific group.
 export const getGroupDetails = async (groupId, studentId) => {
     const result = await pool.query(
@@ -595,14 +679,29 @@ export const getGroupDetails = async (groupId, studentId) => {
             sg.*,
             ci.intention_name,
             u.full_name AS creator_name,
+
+            COALESCE(
+                ARRAY_AGG(DISTINCT gay.year_of_study)
+                    FILTER (WHERE gay.year_of_study IS NOT NULL),
+                '{}'
+            ) AS allowed_years,
+
+            COALESCE(
+                ARRAY_AGG(DISTINCT member_profile.year_of_study)
+                    FILTER (WHERE member_profile.year_of_study IS NOT NULL),
+                '{}'
+            ) AS member_years,
+
             COUNT(DISTINCT gm.membership_id) FILTER (
                 WHERE gm.membership_status = 'active'
             ) AS current_members,
+
             COALESCE(
                 ARRAY_AGG(DISTINCT s.skill_name)
-                FILTER (WHERE s.skill_id IS NOT NULL),
+                    FILTER (WHERE s.skill_id IS NOT NULL),
                 '{}'
             ) AS required_skills,
+
             EXISTS (
                 SELECT 1
                 FROM group_members mine
@@ -610,6 +709,7 @@ export const getGroupDetails = async (groupId, studentId) => {
                   AND mine.student_id = $2
                   AND mine.membership_status = 'active'
             ) AS is_member,
+
             EXISTS (
                 SELECT 1
                 FROM collaboration_requests cr
@@ -617,18 +717,36 @@ export const getGroupDetails = async (groupId, studentId) => {
                   AND cr.student_id = $2
                   AND cr.request_status = 'pending'
             ) AS has_pending_request
+
          FROM student_groups sg
-         JOIN users u ON u.user_id = sg.created_by
+
+         JOIN users u
+            ON u.user_id = sg.created_by
+
          LEFT JOIN collaboration_intentions ci
             ON ci.intention_id = sg.intention_id
+
          LEFT JOIN group_members gm
             ON gm.group_id = sg.group_id
+
+         LEFT JOIN student_profiles member_profile
+            ON member_profile.user_id = gm.student_id
+
+         LEFT JOIN group_allowed_years gay
+            ON gay.group_id = sg.group_id
+
          LEFT JOIN group_required_skills grs
             ON grs.group_id = sg.group_id
+
          LEFT JOIN skills s
             ON s.skill_id = grs.skill_id
+
          WHERE sg.group_id = $1
-         GROUP BY sg.group_id, ci.intention_name, u.full_name`,
+
+         GROUP BY
+            sg.group_id,
+            ci.intention_name,
+            u.full_name`,
         [groupId, studentId]
     );
 

@@ -17,24 +17,48 @@ const router = express.Router();
 
 const uuidSchema = z.string().uuid();
 
+const academicYearSchema = z.number().int().min(1).max(4);
+
+// ======================================
+// CREATE GROUP VALIDATION
+// ======================================
+
 const createGroupSchema = z.object({
     groupName: z.string().trim().min(3).max(100),
+
     description: z.string().trim().max(3000).optional(),
+
     maxMembers: z.number().int().min(2).max(15),
+
     intentionId: uuidSchema,
+
     objectives: z.string().trim().min(10).max(5000),
+
     expectedDeliverables: z.string().trim().min(10).max(5000),
+
     memberResponsibilities: z.string().trim().min(10).max(5000),
+
     memberExpectations: z.string().trim().min(10).max(5000),
+
     requiredSkillIds: z.array(uuidSchema).max(50).default([]),
 
     acceptsAllYears: z.boolean().default(true),
 
-    allowedYears: z.array(
-        z.number().int().min(1).max(4)
-    ).max(4).default([]),
+    allowedYears: z.array(academicYearSchema).max(4).default([])
 
-}).strict().superRefine((data, ctx) => {
+}).strict()
+
+.superRefine((data, ctx) => {
+    const uniqueYears = new Set(data.allowedYears);
+
+    if (uniqueYears.size !== data.allowedYears.length) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['allowedYears'],
+            message: 'An academic year cannot be selected more than once.'
+        });
+    }
+
     if (data.acceptsAllYears && data.allowedYears.length > 0) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -50,7 +74,63 @@ const createGroupSchema = z.object({
             message: 'Select at least one academic year.'
         });
     }
+})
+
+.transform(data => {
+    // Selecting all four individual years is equivalent to All Years.
+
+    if (data.allowedYears.length === 4) {
+        return {
+            ...data,
+            acceptsAllYears: true,
+            allowedYears: []
+        };
+    }
+
+    return data;
 });
+
+
+// ======================================
+// GROUP DISCOVERY FILTER VALIDATION
+// ======================================
+
+const discoveryScopeSchema = z.enum([
+    'course',
+    'department',
+    'school',
+    'university'
+]);
+
+const memberYearsSchema = z.preprocess(value => {
+    if (value === undefined || value === '') {
+        return [];
+    }
+
+    let values;
+
+    if (Array.isArray(value)) {
+        values = value;
+    } else {
+        values = String(value).split(',');
+    }
+
+    return values.map(year => {
+        if (typeof year === 'number') {
+            return year;
+        }
+
+        if (!/^[1-4]$/.test(String(year).trim())) {
+            return Number.NaN;
+        }
+
+        return Number(year);
+    });
+
+}, z.array(academicYearSchema).max(4))
+
+.transform(years => [...new Set(years)]);
+
 
 // ======================================
 // CREATE GROUP
@@ -76,11 +156,12 @@ router.post(
                 validation.data
             );
 
-            res.status(201).json({
+            return res.status(201).json({
                 status: 'success',
                 message: 'Group created successfully.',
                 group
             });
+
         } catch (error) {
             next(error);
         }
@@ -97,34 +178,45 @@ router.get(
     requireStudent,
     async (req, res, next) => {
         try {
-            const scopeSchema = z.enum([
-                'course',
-                'department',
-                'school',
-                'university'
-            ]);
-
-            const validation = scopeSchema.safeParse(
+            const scopeValidation = discoveryScopeSchema.safeParse(
                 req.query.scope || 'course'
             );
 
-            if (!validation.success) {
+            if (!scopeValidation.success) {
                 return res.status(400).json({
                     status: 'error',
                     message: 'Invalid discovery scope.'
                 });
             }
 
-            const groups = await discoverGroups(
-                req.currentUser.userId,
-                validation.data
+            const yearsValidation = memberYearsSchema.safeParse(
+                req.query.memberYears
             );
 
-            res.status(200).json({
+            if (!yearsValidation.success) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Invalid academic year filter. Select years between 1 and 4.',
+                    errors: yearsValidation.error.issues
+                });
+            }
+
+            const groups = await discoverGroups(
+                req.currentUser.userId,
+                scopeValidation.data,
+                yearsValidation.data
+            );
+
+            return res.status(200).json({
                 status: 'success',
                 count: groups.length,
+                filters: {
+                    scope: scopeValidation.data,
+                    memberYears: yearsValidation.data
+                },
                 groups
             });
+
         } catch (error) {
             next(error);
         }
@@ -155,10 +247,11 @@ router.get(
                 req.currentUser.userId
             );
 
-            res.status(200).json({
+            return res.status(200).json({
                 status: 'success',
                 group
             });
+
         } catch (error) {
             next(error);
         }
@@ -196,11 +289,12 @@ router.post(
                 bodyValidation.data.message
             );
 
-            res.status(201).json({
+            return res.status(201).json({
                 status: 'success',
                 message: 'Membership request submitted.',
                 request
             });
+
         } catch (error) {
             next(error);
         }
@@ -231,11 +325,12 @@ router.get(
                 req.currentUser.userId
             );
 
-            res.status(200).json({
+            return res.status(200).json({
                 status: 'success',
                 count: requests.length,
                 requests
             });
+
         } catch (error) {
             next(error);
         }
@@ -273,11 +368,12 @@ router.patch(
                 bodyValidation.data.decision
             );
 
-            res.status(200).json({
+            return res.status(200).json({
                 status: 'success',
                 message: `Membership request ${bodyValidation.data.decision}.`,
                 request
             });
+
         } catch (error) {
             next(error);
         }
