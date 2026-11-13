@@ -527,9 +527,25 @@ const buildStudentReasons = (first, second, factors) => {
 
 export const getStudentMatches = async (
     studentId,
-    { limit = 20 } = {}
+    { limit = 20, years = [] } = {}
 ) => {
-    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
+    const safeLimit = Math.min(
+        Math.max(Number(limit) || 20, 1),
+        50
+    );
+
+    const uniqueYears = [...new Set(years)];
+
+    if (
+        !Array.isArray(uniqueYears) ||
+        !uniqueYears.every(
+            year => Number.isInteger(year) && year >= 1 && year <= 4
+        )
+    ) {
+        const error = new Error('Invalid academic year filter.');
+        error.statusCode = 400;
+        throw error;
+    }
 
     const currentStudent = await getStudentData(studentId);
 
@@ -539,18 +555,23 @@ export const getStudentMatches = async (
         throw error;
     }
 
-    const candidates = await getStudentCandidates(studentId);
+    const candidates = await getStudentCandidates(
+        studentId,
+        uniqueYears
+    );
 
-    const matches = candidates.map((candidate) => {
+    const matches = candidates.map(candidate => {
         const factors = {
             intentions: getIntentionScore(currentStudent, candidate),
             skills: getSkillScore(currentStudent, candidate),
             interests: getInterestScore(currentStudent, candidate),
             academics: getAcademicScore(currentStudent, candidate),
+
             availability: getAvailabilityScore(
                 currentStudent,
                 candidate
             ),
+
             preferences: getMutualPreferenceScore(
                 currentStudent,
                 candidate
@@ -565,10 +586,15 @@ export const getStudentMatches = async (
         return {
             studentId: candidate.studentId,
             fullName: candidate.fullName,
+
+            yearOfStudy: candidate.yearOfStudy,
+
             course: candidate.courseName,
             department: candidate.departmentName,
             faculty: candidate.facultyName,
+
             score,
+
             reasons: buildStudentReasons(
                 currentStudent,
                 candidate,
@@ -582,7 +608,7 @@ export const getStudentMatches = async (
         .slice(0, safeLimit);
 };
 
-const getGroupCandidates = async (studentId) => {
+const getGroupCandidates = async (studentId, studentYear) => {
     const result = await pool.query(
         `SELECT
             sg.group_id AS "groupId",
@@ -592,13 +618,23 @@ const getGroupCandidates = async (studentId) => {
             sg.intention_id AS "intentionId",
             ci.intention_name AS "intentionName",
 
+            sg.accepts_all_years AS "acceptsAllYears",
+
+            COALESCE((
+                SELECT ARRAY_AGG(gay.year_of_study ORDER BY gay.year_of_study)
+                FROM group_allowed_years gay
+                WHERE gay.group_id = sg.group_id
+            ), '{}') AS "allowedYears",
+
             owner.user_id AS "ownerId",
             owner.full_name AS "ownerName",
 
             c.course_id AS "courseId",
             c.name AS "courseName",
+
             d.department_id AS "departmentId",
             d.name AS "departmentName",
+
             f.faculty_id AS "facultyId",
             f.name AS "facultyName",
 
@@ -613,7 +649,8 @@ const getGroupCandidates = async (studentId) => {
                     ORDER BY s.skill_name
                 )
                 FROM group_required_skills grs
-                JOIN skills s ON s.skill_id = grs.skill_id
+                JOIN skills s
+                    ON s.skill_id = grs.skill_id
                 WHERE grs.group_id = sg.group_id
             ), '[]'::jsonb) AS "requiredSkills",
 
@@ -663,6 +700,19 @@ const getGroupCandidates = async (studentId) => {
         WHERE sg.group_status = 'open'
           AND sg.created_by <> $1
 
+          -- Enforce the group's academic year eligibility.
+          AND (
+              sg.accepts_all_years = TRUE
+
+              OR EXISTS (
+                  SELECT 1
+                  FROM group_allowed_years gay
+                  WHERE gay.group_id = sg.group_id
+                    AND gay.year_of_study = $2
+              )
+          )
+
+          -- Exclude groups the student already belongs to.
           AND NOT EXISTS (
               SELECT 1
               FROM group_members existing
@@ -671,6 +721,7 @@ const getGroupCandidates = async (studentId) => {
                 AND existing.membership_status = 'active'
           )
 
+          -- Exclude groups with an existing pending request.
           AND NOT EXISTS (
               SELECT 1
               FROM collaboration_requests cr
@@ -685,6 +736,7 @@ const getGroupCandidates = async (studentId) => {
             sg.description,
             sg.max_members,
             sg.intention_id,
+            sg.accepts_all_years,
             ci.intention_name,
             owner.user_id,
             owner.full_name,
@@ -698,7 +750,7 @@ const getGroupCandidates = async (studentId) => {
         HAVING COUNT(DISTINCT gm.membership_id) < sg.max_members
 
         ORDER BY sg.created_at DESC`,
-        [studentId]
+        [studentId, studentYear]
     );
 
     return result.rows;
