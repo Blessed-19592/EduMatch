@@ -366,14 +366,15 @@ export const replaceStudentIntentions = async (
 
 // GET STUDENT PARTNER PREFERENCES
 
+
 export const getStudentPartnerPreferences = async (userId) => {
     const result = await pool.query(
         `SELECT
-            spp.preference_id,
-            spp.preferred_experience_level,
-            spp.preferred_commitment_level,
-            spp.preferred_working_style,
-            spp.additional_preferences,
+            spp.preference_id AS "preferenceId",
+            spp.preferred_experience_level AS "preferredExperienceLevel",
+            spp.preferred_commitment_level AS "preferredCommitmentLevel",
+            spp.preferred_working_style AS "preferredWorkingStyle",
+            spp.additional_preferences AS "additionalPreferences",
 
             COALESCE((
                 SELECT jsonb_agg(
@@ -385,56 +386,61 @@ export const getStudentPartnerPreferences = async (userId) => {
                     ORDER BY s.skill_name
                 )
                 FROM preferred_partner_skills pps
-                JOIN skills s ON s.skill_id = pps.skill_id
+                JOIN skills s
+                    ON s.skill_id = pps.skill_id
                 WHERE pps.preference_id = spp.preference_id
-            ), '[]'::jsonb) AS preferred_skills,
+            ), '[]'::jsonb) AS "preferredSkills",
 
             COALESCE((
                 SELECT jsonb_agg(
                     jsonb_build_object(
                         'facultyId', f.faculty_id,
-                        'facultyName', f.faculty_name
+                        'facultyName', f.name
                     )
-                    ORDER BY f.faculty_name
+                    ORDER BY f.name
                 )
                 FROM preferred_partner_faculties ppf
-                JOIN faculties f ON f.faculty_id = ppf.faculty_id
+                JOIN faculties f
+                    ON f.faculty_id = ppf.faculty_id
                 WHERE ppf.preference_id = spp.preference_id
-            ), '[]'::jsonb) AS preferred_faculties,
+            ), '[]'::jsonb) AS "preferredFaculties",
 
             COALESCE((
                 SELECT jsonb_agg(
                     jsonb_build_object(
                         'departmentId', d.department_id,
-                        'departmentName', d.department_name
+                        'departmentName', d.name
                     )
-                    ORDER BY d.department_name
+                    ORDER BY d.name
                 )
                 FROM preferred_partner_departments ppd
-                JOIN departments d ON d.department_id = ppd.department_id
+                JOIN departments d
+                    ON d.department_id = ppd.department_id
                 WHERE ppd.preference_id = spp.preference_id
-            ), '[]'::jsonb) AS preferred_departments,
+            ), '[]'::jsonb) AS "preferredDepartments",
 
             COALESCE((
                 SELECT jsonb_agg(
                     jsonb_build_object(
                         'courseId', c.course_id,
-                        'courseName', c.course_name
+                        'courseName', c.name
                     )
-                    ORDER BY c.course_name
+                    ORDER BY c.name
                 )
                 FROM preferred_partner_courses ppc
-                JOIN courses c ON c.course_id = ppc.course_id
+                JOIN courses c
+                    ON c.course_id = ppc.course_id
                 WHERE ppc.preference_id = spp.preference_id
-            ), '[]'::jsonb) AS preferred_courses
+            ), '[]'::jsonb) AS "preferredCourses"
 
-         FROM student_partner_preferences spp
-         WHERE spp.student_id = $1`,
+        FROM student_partner_preferences spp
+        WHERE spp.student_id = $1`,
         [userId]
     );
 
     if (result.rows.length === 0) {
         return {
+            preferenceId: null,
             preferredExperienceLevel: 'any',
             preferredCommitmentLevel: 'any',
             preferredWorkingStyle: 'any',
