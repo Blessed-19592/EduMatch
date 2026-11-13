@@ -359,3 +359,235 @@ export const replaceStudentIntentions = async (
         client.release();
     }
 };
+
+// ======================================
+// STUDENT PARTNER PREFERENCES
+// ======================================
+
+// GET STUDENT PARTNER PREFERENCES
+
+export const getStudentPartnerPreferences = async (userId) => {
+    const result = await pool.query(
+        `SELECT
+            spp.preference_id,
+            spp.preferred_experience_level,
+            spp.preferred_commitment_level,
+            spp.preferred_working_style,
+            spp.additional_preferences,
+
+            COALESCE((
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'skillId', s.skill_id,
+                        'skillName', s.skill_name,
+                        'category', s.category
+                    )
+                    ORDER BY s.skill_name
+                )
+                FROM preferred_partner_skills pps
+                JOIN skills s ON s.skill_id = pps.skill_id
+                WHERE pps.preference_id = spp.preference_id
+            ), '[]'::jsonb) AS preferred_skills,
+
+            COALESCE((
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'facultyId', f.faculty_id,
+                        'facultyName', f.faculty_name
+                    )
+                    ORDER BY f.faculty_name
+                )
+                FROM preferred_partner_faculties ppf
+                JOIN faculties f ON f.faculty_id = ppf.faculty_id
+                WHERE ppf.preference_id = spp.preference_id
+            ), '[]'::jsonb) AS preferred_faculties,
+
+            COALESCE((
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'departmentId', d.department_id,
+                        'departmentName', d.department_name
+                    )
+                    ORDER BY d.department_name
+                )
+                FROM preferred_partner_departments ppd
+                JOIN departments d ON d.department_id = ppd.department_id
+                WHERE ppd.preference_id = spp.preference_id
+            ), '[]'::jsonb) AS preferred_departments,
+
+            COALESCE((
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'courseId', c.course_id,
+                        'courseName', c.course_name
+                    )
+                    ORDER BY c.course_name
+                )
+                FROM preferred_partner_courses ppc
+                JOIN courses c ON c.course_id = ppc.course_id
+                WHERE ppc.preference_id = spp.preference_id
+            ), '[]'::jsonb) AS preferred_courses
+
+         FROM student_partner_preferences spp
+         WHERE spp.student_id = $1`,
+        [userId]
+    );
+
+    if (result.rows.length === 0) {
+        return {
+            preferredExperienceLevel: 'any',
+            preferredCommitmentLevel: 'any',
+            preferredWorkingStyle: 'any',
+            additionalPreferences: null,
+            preferredSkills: [],
+            preferredFaculties: [],
+            preferredDepartments: [],
+            preferredCourses: []
+        };
+    }
+
+    return result.rows[0];
+};
+
+
+// REPLACE STUDENT PARTNER PREFERENCES
+
+export const replaceStudentPartnerPreferences = async (
+    userId,
+    preferences
+) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        await lockStudentProfile(client, userId);
+
+        const preferenceResult = await client.query(
+            `INSERT INTO student_partner_preferences (
+                student_id,
+                preferred_experience_level,
+                preferred_commitment_level,
+                preferred_working_style,
+                additional_preferences
+             )
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (student_id)
+             DO UPDATE SET
+                preferred_experience_level = EXCLUDED.preferred_experience_level,
+                preferred_commitment_level = EXCLUDED.preferred_commitment_level,
+                preferred_working_style = EXCLUDED.preferred_working_style,
+                additional_preferences = EXCLUDED.additional_preferences,
+                updated_at = NOW()
+             RETURNING preference_id`,
+            [
+                userId,
+                preferences.preferredExperienceLevel,
+                preferences.preferredCommitmentLevel,
+                preferences.preferredWorkingStyle,
+                preferences.additionalPreferences
+            ]
+        );
+
+        const preferenceId = preferenceResult.rows[0].preference_id;
+
+        // Replace selected preferred skills.
+        await client.query(
+            `DELETE FROM preferred_partner_skills
+             WHERE preference_id = $1`,
+            [preferenceId]
+        );
+
+        const skillsResult = await client.query(
+            `INSERT INTO preferred_partner_skills (
+                preference_id,
+                skill_id
+             )
+             SELECT $1, submitted.skill_id
+             FROM unnest($2::uuid[]) AS submitted(skill_id)
+             JOIN skills s ON s.skill_id = submitted.skill_id`,
+            [preferenceId, preferences.preferredSkillIds]
+        );
+
+        if (skillsResult.rowCount !== preferences.preferredSkillIds.length) {
+            throw new AppError('One or more preferred skills do not exist.', 400);
+        }
+
+        // Replace preferred faculties.
+        await client.query(
+            `DELETE FROM preferred_partner_faculties
+             WHERE preference_id = $1`,
+            [preferenceId]
+        );
+
+        const facultiesResult = await client.query(
+            `INSERT INTO preferred_partner_faculties (
+                preference_id,
+                faculty_id
+             )
+             SELECT $1, submitted.faculty_id
+             FROM unnest($2::uuid[]) AS submitted(faculty_id)
+             JOIN faculties f ON f.faculty_id = submitted.faculty_id`,
+            [preferenceId, preferences.preferredFacultyIds]
+        );
+
+        if (facultiesResult.rowCount !== preferences.preferredFacultyIds.length) {
+            throw new AppError('One or more preferred faculties do not exist.', 400);
+        }
+
+        // Replace preferred departments.
+        await client.query(
+            `DELETE FROM preferred_partner_departments
+             WHERE preference_id = $1`,
+            [preferenceId]
+        );
+
+        const departmentsResult = await client.query(
+            `INSERT INTO preferred_partner_departments (
+                preference_id,
+                department_id
+             )
+             SELECT $1, submitted.department_id
+             FROM unnest($2::uuid[]) AS submitted(department_id)
+             JOIN departments d ON d.department_id = submitted.department_id`,
+            [preferenceId, preferences.preferredDepartmentIds]
+        );
+
+        if (departmentsResult.rowCount !== preferences.preferredDepartmentIds.length) {
+            throw new AppError('One or more preferred departments do not exist.', 400);
+        }
+
+        // Replace preferred courses.
+        await client.query(
+            `DELETE FROM preferred_partner_courses
+             WHERE preference_id = $1`,
+            [preferenceId]
+        );
+
+        const coursesResult = await client.query(
+            `INSERT INTO preferred_partner_courses (
+                preference_id,
+                course_id
+             )
+             SELECT $1, submitted.course_id
+             FROM unnest($2::uuid[]) AS submitted(course_id)
+             JOIN courses c ON c.course_id = submitted.course_id`,
+            [preferenceId, preferences.preferredCourseIds]
+        );
+
+        if (coursesResult.rowCount !== preferences.preferredCourseIds.length) {
+            throw new AppError('One or more preferred courses do not exist.', 400);
+        }
+
+        await client.query('COMMIT');
+
+        return await getStudentPartnerPreferences(userId);
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+
+    } finally {
+        client.release();
+    }
+};

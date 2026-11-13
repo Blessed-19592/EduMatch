@@ -244,6 +244,41 @@ const authLimiter = rateLimit({
 
 app.use('/api', generalLimiter);
 
+// ======================================
+// HEALTH CHECK
+// ======================================
+
+app.get('/api/health', (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        message: 'EduMatch API is running.'
+    });
+});
+
+// ======================================
+// DATABASE CONNECTION CHECK
+// ======================================
+
+app.get('/api/db-health', async (req, res, next) => {
+    try {
+        const result = await pool.query(
+            `SELECT
+                current_database() AS database,
+                NOW() AS server_time`
+        );
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Database connection successful.',
+            database: result.rows[0].database,
+            serverTime: result.rows[0].server_time
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
 app.use('/api/auth', authLimiter);
 
 
@@ -302,41 +337,9 @@ app.use('/api', skillInterestRoutes);
 app.use('/api/students', portfolioRoutes);
 app.use('/api/students', assessmentEvidenceRoutes);
 
-// ======================================
-// HEALTH CHECK
-// ======================================
-
-app.get('/api/health', (req, res) => {
-    res.status(200).json({
-        status: 'success',
-        message: 'EduMatch API is running.'
-    });
-});
 
 
-// ======================================
-// DATABASE CONNECTION CHECK
-// ======================================
 
-app.get('/api/db-health', async (req, res, next) => {
-    try {
-        const result = await pool.query(
-            `SELECT
-                current_database() AS database,
-                NOW() AS server_time`
-        );
-
-        res.status(200).json({
-            status: 'success',
-            message: 'Database connection successful.',
-            database: result.rows[0].database,
-            serverTime: result.rows[0].server_time
-        });
-
-    } catch (error) {
-        next(error);
-    }
-});
 
 
 // ======================================

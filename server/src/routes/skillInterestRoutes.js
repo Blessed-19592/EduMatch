@@ -67,7 +67,7 @@ const interestsSchema = z.object({
 
 const intentionsSchema = z.object({
     intentionIds: z.array(z.string().uuid())
-        .max(4)
+        .max(5)
 }).strict().refine(
     (data) => new Set(data.intentionIds).size === data.intentionIds.length,
     {
