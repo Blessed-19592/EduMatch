@@ -83,6 +83,7 @@ const getStudentData = async (studentId) => {
             sp.preferred_meeting_mode AS "meetingMode",
             sp.preferred_meeting_times AS "meetingTimes",
             sp.commitment_level AS "commitmentLevel",
+            sp.year_of_study AS "yearOfStudy",
 
             c.course_id AS "courseId",
             c.name AS "courseName",
@@ -189,6 +190,7 @@ const getStudentCandidates = async (studentId) => {
             sp.preferred_meeting_mode AS "meetingMode",
             sp.preferred_meeting_times AS "meetingTimes",
             sp.commitment_level AS "commitmentLevel",
+            sp.year_of_study AS "yearOfStudy",
 
             c.course_id AS "courseId",
             c.name AS "courseName",
