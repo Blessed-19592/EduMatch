@@ -29,12 +29,6 @@ const COMMITMENT_LEVELS = {
     high: 3
 };
 
-const EXPERIENCE_LEVELS = {
-    beginner: 1,
-    intermediate: 2,
-    advanced: 3,
-    expert: 4
-};
 
 const normalize = (value) =>
     String(value ?? '').trim().toLowerCase();
@@ -100,14 +94,10 @@ const getStudentData = async (studentId) => {
             f.name AS "facultyName",
 
             COALESCE((
-                SELECT jsonb_agg(
-                    jsonb_build_object(
-                        'id', si.intention_id
-                    )
-                )
-                FROM student_intentions si
-                WHERE si.student_id = u.user_id
-            ), '[]'::jsonb) AS intentions,
+    SELECT jsonb_agg(si.intention_id)
+    FROM student_intentions si
+    WHERE si.student_id = u.user_id
+), '[]'::jsonb) AS intentions,
 
             COALESCE((
                 SELECT jsonb_agg(
@@ -284,12 +274,7 @@ const getStudentCandidates = async (studentId) => {
           AND u.role = 'student'
           AND u.account_status = 'active'
           AND sp.collaboration_status <> 'unavailable'
-          AND NOT EXISTS (
-              SELECT 1
-              FROM group_members gm
-              WHERE gm.student_id = u.user_id
-                AND gm.membership_status = 'active'
-          )`,
+         `,
         [studentId]
     );
 
