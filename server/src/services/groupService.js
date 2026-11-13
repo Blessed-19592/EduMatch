@@ -10,7 +10,6 @@ export const createGroup = async (userId, groupData) => {
         description,
         maxMembers,
         intentionId,
-        collaborationTypeId,
         objectives,
         expectedDeliverables,
         memberResponsibilities,
@@ -33,18 +32,6 @@ export const createGroup = async (userId, groupData) => {
 
         if (intention.rows.length === 0) {
             throw new AppError('Invalid collaboration intention.', 400);
-        }
-
-        // Validate the collaboration type.
-        const type = await client.query(
-            `SELECT collaboration_type_id
-             FROM collaboration_types
-             WHERE collaboration_type_id = $1`,
-            [collaborationTypeId]
-        );
-
-        if (type.rows.length === 0) {
-            throw new AppError('Invalid collaboration type.', 400);
         }
 
         // Validate all required skills.
@@ -71,13 +58,12 @@ export const createGroup = async (userId, groupData) => {
                 created_by,
                 max_members,
                 intention_id,
-                collaboration_type_id,
                 objectives,
                 expected_deliverables,
                 member_responsibilities,
                 member_expectations
              )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              RETURNING *`,
             [
                 groupName.trim(),
@@ -85,7 +71,6 @@ export const createGroup = async (userId, groupData) => {
                 userId,
                 maxMembers,
                 intentionId,
-                collaborationTypeId,
                 objectives.trim(),
                 expectedDeliverables.trim(),
                 memberResponsibilities.trim(),
@@ -389,8 +374,6 @@ export const discoverGroups = async (studentId, scope = 'university') => {
             sg.member_expectations,
             sg.intention_id,
             ci.intention_name,
-            sg.collaboration_type_id,
-            ct.type_name AS collaboration_type,
             u.full_name AS creator_name,
             c.name AS course_name,
             d.name AS department_name,
@@ -436,9 +419,6 @@ export const discoverGroups = async (studentId, scope = 'university') => {
 
          LEFT JOIN collaboration_intentions ci
             ON ci.intention_id = sg.intention_id
-
-         LEFT JOIN collaboration_types ct
-            ON ct.collaboration_type_id = sg.collaboration_type_id
 
          LEFT JOIN group_members gm
             ON gm.group_id = sg.group_id
@@ -507,7 +487,6 @@ export const discoverGroups = async (studentId, scope = 'university') => {
          GROUP BY
             sg.group_id,
             ci.intention_name,
-            ct.type_name,
             u.full_name,
             c.name,
             d.name,
@@ -528,7 +507,6 @@ export const getGroupDetails = async (groupId, studentId) => {
         `SELECT
             sg.*,
             ci.intention_name,
-            ct.type_name AS collaboration_type,
             u.full_name AS creator_name,
             COUNT(DISTINCT gm.membership_id) FILTER (
                 WHERE gm.membership_status = 'active'
@@ -556,8 +534,6 @@ export const getGroupDetails = async (groupId, studentId) => {
          JOIN users u ON u.user_id = sg.created_by
          LEFT JOIN collaboration_intentions ci
             ON ci.intention_id = sg.intention_id
-         LEFT JOIN collaboration_types ct
-            ON ct.collaboration_type_id = sg.collaboration_type_id
          LEFT JOIN group_members gm
             ON gm.group_id = sg.group_id
          LEFT JOIN group_required_skills grs
@@ -565,7 +541,7 @@ export const getGroupDetails = async (groupId, studentId) => {
          LEFT JOIN skills s
             ON s.skill_id = grs.skill_id
          WHERE sg.group_id = $1
-         GROUP BY sg.group_id, ci.intention_name, ct.type_name, u.full_name`,
+         GROUP BY sg.group_id, ci.intention_name, u.full_name`,
         [groupId, studentId]
     );
 
