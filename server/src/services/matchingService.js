@@ -271,9 +271,20 @@ const getStudentCandidates = async (studentId) => {
             ON f.faculty_id = d.faculty_id
 
         WHERE u.user_id <> $1
-          AND u.role = 'student'
-          AND u.account_status = 'active'
-          AND sp.collaboration_status <> 'unavailable'
+  AND u.role = 'student'
+  AND u.account_status = 'active'
+  AND sp.collaboration_status <> 'unavailable'
+
+  AND NOT EXISTS (
+      SELECT 1
+      FROM group_members current_member
+      JOIN group_members candidate_member
+          ON candidate_member.group_id = current_member.group_id
+      WHERE current_member.student_id = $1
+        AND candidate_member.student_id = u.user_id
+        AND current_member.membership_status = 'active'
+        AND candidate_member.membership_status = 'active'
+  )
          `,
         [studentId]
     );

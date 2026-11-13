@@ -1,4 +1,5 @@
 
+import matchingRoutes from './routes/matchingRoutes.js';
 import assessmentEvidenceRoutes from './routes/assessmentEvidenceRoutes.js';
 import portfolioRoutes from './routes/portfolioRoutes.js';
 import skillInterestRoutes from './routes/skillInterestRoutes.js';
@@ -336,7 +337,7 @@ app.use('/api/students', studentProfileRoutes);
 app.use('/api', skillInterestRoutes);
 app.use('/api/students', portfolioRoutes);
 app.use('/api/students', assessmentEvidenceRoutes);
-
+app.use('/api/matches', matchingRoutes);
 
 
 
