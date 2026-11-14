@@ -11,6 +11,7 @@ import {
     submitMembershipRequest,
     getGroupMembershipRequests,
     respondToMembershipRequest
+    leaveGroup
 } from '../services/groupService.js';
 
 const router = express.Router();
@@ -380,4 +381,37 @@ router.patch(
     }
 );
 
+// ======================================
+// LEAVE GROUP
+// ======================================
+
+router.delete(
+    '/:groupId/membership',
+    requireStudent,
+    async (req, res, next) => {
+        try {
+            const validation = uuidSchema.safeParse(req.params.groupId);
+
+            if (!validation.success) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Invalid group ID.'
+                });
+            }
+
+            const result = await leaveGroup(
+                req.currentUser.userId,
+                validation.data
+            );
+
+            return res.status(200).json({
+                status: 'success',
+                ...result
+            });
+
+        } catch (error) {
+            next(error);
+        }
+    }
+);
 export default router;
