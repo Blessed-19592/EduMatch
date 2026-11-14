@@ -759,3 +759,87 @@ export const getGroupDetails = async (groupId, studentId) => {
 
     return result.rows[0];
 };
+
+// Allow an active non-owner member to leave a group.
+export const leaveGroup = async (userId, groupId) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // Lock the group to serialize membership changes.
+        const groupResult = await client.query(
+            `SELECT group_id, created_by
+             FROM student_groups
+             WHERE group_id = $1
+             FOR UPDATE`,
+            [groupId]
+        );
+
+        if (groupResult.rows.length === 0) {
+            throw new AppError('Group not found.', 404);
+        }
+
+        const group = groupResult.rows[0];
+
+        // The creator cannot leave without transferring ownership.
+        if (String(group.created_by) === String(userId)) {
+            throw new AppError(
+                'The group owner cannot leave without transferring ownership.',
+                403
+            );
+        }
+
+        // Check the student's active membership.
+        const membershipResult = await client.query(
+            `SELECT membership_role, membership_status
+             FROM group_members
+             WHERE group_id = $1
+               AND student_id = $2
+             FOR UPDATE`,
+            [groupId, userId]
+        );
+
+        if (
+            membershipResult.rows.length === 0 ||
+            membershipResult.rows[0].membership_status !== 'active'
+        ) {
+            throw new AppError(
+                'You are not an active member of this group.',
+                404
+            );
+        }
+
+        if (membershipResult.rows[0].membership_role === 'owner') {
+            throw new AppError(
+                'The group owner cannot leave without transferring ownership.',
+                403
+            );
+        }
+
+        // Preserve membership history by marking the membership inactive.
+        await client.query(
+            `UPDATE group_members
+             SET membership_status = 'inactive'
+             WHERE group_id = $1
+               AND student_id = $2`,
+            [groupId, userId]
+        );
+
+        // The database trigger automatically refreshes group status.
+        await client.query('COMMIT');
+
+        return {
+            groupId,
+            membershipStatus: 'inactive',
+            message: 'You have successfully left the group.'
+        };
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+
+    } finally {
+        client.release();
+    }
+};
