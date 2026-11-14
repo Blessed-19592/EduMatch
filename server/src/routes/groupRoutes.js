@@ -10,7 +10,7 @@ import {
     getGroupDetails,
     submitMembershipRequest,
     getGroupMembershipRequests,
-    respondToMembershipRequest
+    respondToMembershipRequest,
     leaveGroup
 } from '../services/groupService.js';
 

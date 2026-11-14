@@ -690,10 +690,13 @@ export const getGroupDetails = async (groupId, studentId) => {
             ) AS allowed_years,
 
             COALESCE(
-                ARRAY_AGG(DISTINCT member_profile.year_of_study)
-                    FILTER (WHERE member_profile.year_of_study IS NOT NULL),
-                '{}'
-            ) AS member_years,
+    ARRAY_AGG(DISTINCT member_profile.year_of_study)
+        FILTER (
+            WHERE gm.membership_status = 'active'
+            AND member_profile.year_of_study IS NOT NULL
+        ),
+    '{}'
+) AS member_years,
 
             COUNT(DISTINCT gm.membership_id) FILTER (
                 WHERE gm.membership_status = 'active'
@@ -820,7 +823,7 @@ export const leaveGroup = async (userId, groupId) => {
         // Preserve membership history by marking the membership inactive.
         await client.query(
             `UPDATE group_members
-             SET membership_status = 'inactive'
+             SET membership_status = 'left'
              WHERE group_id = $1
                AND student_id = $2`,
             [groupId, userId]
@@ -831,7 +834,7 @@ export const leaveGroup = async (userId, groupId) => {
 
         return {
             groupId,
-            membershipStatus: 'inactive',
+            membershipStatus: 'left',
             message: 'You have successfully left the group.'
         };
 
