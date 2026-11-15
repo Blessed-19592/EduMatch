@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faArrowLeft, faUsers, faCalendarDays, faBullseye,
-  faClipboardCheck, faListCheck, faGraduationCap,
-  faCodeBranch, faSpinner, faRightFromBracket,
-} from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
+import MembershipRequestsPage from './MembershipRequestsPage';
 import './GroupDetailsPage.css';
 
 const unwrapGroup = (payload) => payload?.group || payload?.data?.group || payload?.data || null;
@@ -19,11 +14,10 @@ const formatDate = (value) => {
     : new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
 };
 
-function DetailSection({ icon, title, children }) {
+function DetailSection({ title, children }) {
   return (
     <section className="gd-section">
       <div className="gd-section-heading">
-        <span><FontAwesomeIcon icon={icon} /></span>
         <h2>{title}</h2>
       </div>
       {children}
@@ -37,6 +31,7 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
   const [error, setError] = useState('');
   const [leaving, setLeaving] = useState(false);
   const [notice, setNotice] = useState('');
+  const [showRequests, setShowRequests] = useState(false);
 
   const loadDetails = useCallback(async () => {
     setLoading(true);
@@ -70,13 +65,13 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
   };
 
   if (loading) {
-    return <div className="group-details-page"><div className="gd-state"><FontAwesomeIcon icon={faSpinner} spin /> Loading group details…</div></div>;
+    return <div className="group-details-page"><div className="gd-state">Loading group details…</div></div>;
   }
 
   if (error || !group) {
     return (
       <div className="group-details-page">
-        <button type="button" className="gd-back" onClick={onBack}><FontAwesomeIcon icon={faArrowLeft} /> Back to My Groups</button>
+        <button type="button" className="gd-back" onClick={onBack}>Back to My Groups</button>
         <div className="gd-state gd-error" role="alert">
           <p>{error || 'This group could not be found.'}</p>
           <button type="button" onClick={loadDetails}>Try again</button>
@@ -90,17 +85,26 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
   const memberCount = Number(group.current_members) || 0;
   const maxMembers = Number(group.max_members) || 0;
   const isOwner = membershipRole === 'owner' || group.membership_role === 'owner' || group.is_owner === true;
+
+  if (showRequests && isOwner) {
+    return (
+      <MembershipRequestsPage
+        groupId={groupId}
+        groupName={group.group_name}
+        onBack={() => setShowRequests(false)}
+        onRequestsChanged={loadDetails}
+      />
+    );
+  }
+
   const isMember = group.is_member === true || group.membership_status === 'active';
   const full = String(group.group_status || '').toLowerCase() === 'full' || (maxMembers > 0 && memberCount >= maxMembers);
 
   return (
     <div className="group-details-page">
-      <button type="button" className="gd-back" onClick={onBack}>
-        <FontAwesomeIcon icon={faArrowLeft} /> Back to My Groups
-      </button>
+      <button type="button" className="gd-back" onClick={onBack}>Back to My Groups</button>
 
       <header className="gd-hero">
-        <div className="gd-hero-icon"><FontAwesomeIcon icon={faUsers} /></div>
         <div className="gd-hero-copy">
           <span className="gd-eyebrow">GROUP OVERVIEW</span>
           <h1>{group.group_name}</h1>
@@ -114,33 +118,33 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
       </header>
 
       <div className="gd-summary">
-        <div><FontAwesomeIcon icon={faUsers} /><strong>{memberCount} / {maxMembers || '—'}</strong><span>Active members</span></div>
-        <div><FontAwesomeIcon icon={faCalendarDays} /><strong>{formatDate(group.created_at)}</strong><span>Date created</span></div>
-        <div><FontAwesomeIcon icon={faGraduationCap} /><strong>{group.accepts_all_years || years.length === 0 ? 'All years' : years.map((year) => `Year ${year}`).join(', ')}</strong><span>Academic eligibility</span></div>
+        <div><strong>{memberCount} / {maxMembers || '—'}</strong><span>Active members</span></div>
+        <div><strong>{formatDate(group.created_at)}</strong><span>Date created</span></div>
+        <div><strong>{group.accepts_all_years || years.length === 0 ? 'All years' : years.map((year) => `Year ${year}`).join(', ')}</strong><span>Academic eligibility</span></div>
       </div>
 
       {group.description && (
-        <DetailSection icon={faClipboardCheck} title="About this group">
+        <DetailSection title="About this group">
           <p className="gd-body-copy">{group.description}</p>
         </DetailSection>
       )}
 
       <div className="gd-content-grid">
-        <DetailSection icon={faBullseye} title="Objectives">
+        <DetailSection title="Objectives">
           <p>{group.objectives || 'No objectives have been added yet.'}</p>
         </DetailSection>
-        <DetailSection icon={faClipboardCheck} title="Expected deliverables">
+        <DetailSection title="Expected deliverables">
           <p>{group.expected_deliverables || 'No expected deliverables have been added yet.'}</p>
         </DetailSection>
-        <DetailSection icon={faListCheck} title="Member responsibilities">
+        <DetailSection title="Member responsibilities">
           <p>{group.member_responsibilities || 'No responsibilities have been specified yet.'}</p>
         </DetailSection>
-        <DetailSection icon={faCodeBranch} title="Member expectations">
+        <DetailSection title="Member expectations">
           <p>{group.member_expectations || 'No additional expectations have been specified yet.'}</p>
         </DetailSection>
       </div>
 
-      <DetailSection icon={faGraduationCap} title="Required skills">
+      <DetailSection title="Required skills">
         {skills.length ? (
           <div className="gd-tags">{skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
         ) : <p>No specific skills are required for this group.</p>}
@@ -152,7 +156,6 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
         <div className="gd-actions">
           <p>You are an active member of this group.</p>
           <button type="button" className="gd-leave-button" onClick={leaveGroup} disabled={leaving}>
-            <FontAwesomeIcon icon={leaving ? faSpinner : faRightFromBracket} spin={leaving} />
             {leaving ? 'Leaving group…' : 'Leave group'}
           </button>
         </div>
@@ -160,7 +163,11 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
 
       {isOwner && (
         <div className="gd-owner-note">
-          You own this group. Membership requests can be reviewed from the Membership Requests section when it is added.
+          <div>
+            <strong>Manage membership requests</strong>
+            <p>Review students who have asked to join this group.</p>
+          </div>
+          <button type="button" className="gd-requests-button" onClick={() => setShowRequests(true)}>View requests</button>
         </div>
       )}
     </div>
