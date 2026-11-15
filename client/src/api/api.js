@@ -1,73 +1,49 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: '/api',
-    withCredentials: true,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: '/api',
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 20000,
 });
 
-// Keep the CSRF token in memory, not localStorage.
 let csrfToken = null;
 let csrfRequest = null;
 
-// Retrieve a CSRF token associated with the current session.
-export const fetchCsrfToken = async () => {
-    // Prevent multiple simultaneous token requests.
-    if (csrfRequest) {
-        return csrfRequest;
-    }
+export function clearCsrfToken() {
+  csrfToken = null;
+}
 
-    csrfRequest = api.get('/auth/csrf-token')
-        .then((response) => {
-            csrfToken = response.data.csrfToken;
-            return csrfToken;
-        })
-        .finally(() => {
-            csrfRequest = null;
-        });
+export async function fetchCsrfToken({ force = false } = {}) {
+  if (force) csrfToken = null;
+  if (csrfToken) return csrfToken;
+  if (csrfRequest) return csrfRequest;
 
-    return csrfRequest;
-};
+  csrfRequest = api.get('/auth/csrf-token')
+    .then(({ data }) => {
+      if (!data?.csrfToken) throw new Error('The server did not return a CSRF token.');
+      csrfToken = data.csrfToken;
+      return csrfToken;
+    })
+    .finally(() => { csrfRequest = null; });
 
-// Clear the cached token when the session changes.
-export const clearCsrfToken = () => {
-    csrfToken = null;
-};
+  return csrfRequest;
+}
 
-// Attach CSRF protection to state-changing requests.
 api.interceptors.request.use(async (config) => {
-    const method = config.method?.toUpperCase();
-
-    const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
-
-    if (!safeMethods.includes(method)) {
-        if (!csrfToken) {
-            await fetchCsrfToken();
-        }
-
-        config.headers['X-CSRF-Token'] = csrfToken;
-    }
-
-    return config;
+  const method = (config.method || 'get').toUpperCase();
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const token = await fetchCsrfToken();
+    config.headers = config.headers || {};
+    config.headers['X-CSRF-Token'] = token;
+  }
+  return config;
 });
 
-// Extract useful error messages from API responses.
-export const getApiErrorMessage = (error) => {
-    if (error.response?.data?.message) {
-        return error.response.data.message;
-    }
-
-    if (error.response?.status === 500) {
-        return 'A server error occurred. Please try again later.';
-    }
-
-    if (!error.response) {
-        return 'Unable to connect to EduMatch. Check your connection and try again.';
-    }
-
-    return 'Something went wrong. Please try again.';
-};
+export function getApiErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
+  if (error?.code === 'ECONNABORTED') return 'The request took too long. Please try again.';
+  if (!error?.response) return 'Unable to connect to EduMatch. Check that the server is running and try again.';
+  return error.response.data?.message || fallback;
+}
 
 export default api;

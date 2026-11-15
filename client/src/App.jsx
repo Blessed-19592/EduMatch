@@ -1,4 +1,14 @@
 import { useState } from 'react';
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './routes/ProtectedRoute';
+import LoginPage from './pages/auth/LoginPage';
+import RequestCodePage from './pages/auth/RequestCodePage';
+import VerifyCodePage from './pages/auth/VerifyCodePage';
+import CompleteRegistrationPage from './pages/auth/CompleteRegistrationPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import './components/auth/Auth.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -58,7 +68,7 @@ const navigation = [
   },
 ];
 
-function Topbar({ activePage, openSidebar }) {
+function Topbar({ activePage, openSidebar, user, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   return (
@@ -117,11 +127,11 @@ function Topbar({ activePage, openSidebar }) {
             onClick={() => setProfileOpen(!profileOpen)}
             aria-expanded={profileOpen}
           >
-            <div className="avatar">LB</div>
+            <div className="avatar">{(user?.fullName || 'Student').split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</div>
 
             <div className="profile-info">
-              <strong>Student</strong>
-              <span>My account</span>
+              <strong>{user?.fullName || 'Student'}</strong>
+              <span>{user?.role === 'admin' ? 'Administrator' : 'My account'}</span>
             </div>
 
             <FontAwesomeIcon
@@ -140,7 +150,7 @@ function Topbar({ activePage, openSidebar }) {
                 Account Settings
               </button>
 
-              <button onClick={() => setProfileOpen(false)}>
+              <button onClick={() => { setProfileOpen(false); onLogout(); }}>
                 Sign Out
               </button>
             </div>
@@ -400,39 +410,90 @@ function Dashboard() {
   );
 }
 
-function App() {
+function StudentWorkspace() {
   const [activePage, setActivePage] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <div className="app-layout">
       <Topbar
         activePage={activePage}
         openSidebar={() => setSidebarOpen(true)}
+        user={user}
+        onLogout={handleLogout}
       />
-
       <Sidebar
         activePage={activePage}
         setActivePage={setActivePage}
         open={sidebarOpen}
         closeSidebar={() => setSidebarOpen(false)}
       />
-
       <main className="main-area">
         {activePage === 'Dashboard' ? (
           <Dashboard />
         ) : (
           <div className="page-placeholder">
             <h1>{activePage}</h1>
-
             <p>
-              This section will be connected to the EduMatch
-              backend as we implement its functionality.
+              This section will be connected to the EduMatch backend as its feature is implemented.
             </p>
           </div>
         )}
       </main>
     </div>
+  );
+}
+
+function AdminLanding() {
+  const { user, logout } = useAuth();
+  return (
+    <main className="admin-coming-soon">
+      <div className="auth-brand-icon"><FontAwesomeIcon icon={faGraduationCap} /></div>
+      <span className="auth-kicker">EDUMATCH ADMINISTRATION</span>
+      <h1>Welcome, {user?.fullName || 'Administrator'}</h1>
+      <p>Your administrator account is authenticated. The administration workspace will be implemented against dedicated admin APIs.</p>
+      <button className="auth-submit admin-logout" onClick={logout}>Sign out</button>
+    </main>
+  );
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/app" replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RequestCodePage />} />
+      <Route path="/register/verify" element={<VerifyCodePage />} />
+      <Route path="/register/complete" element={<CompleteRegistrationPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+        <Route path="/app" element={<StudentWorkspace />} />
+      </Route>
+      <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+        <Route path="/admin" element={<AdminLanding />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/app" replace />} />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
