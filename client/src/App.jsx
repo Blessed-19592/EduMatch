@@ -11,6 +11,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import ProfilePage from './pages/student/ProfilePage';
 import DiscoverGroupsPage from './pages/student/DiscoverGroupsPage';
 import CreateGroupPage from './pages/student/CreateGroupPage';
+import MyGroupsPage from './pages/student/MyGroupsPage';
 import './components/auth/Auth.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -443,23 +444,25 @@ function StudentWorkspace() {
         closeSidebar={() => setSidebarOpen(false)}
       />
       <main className="main-area">
-        {activePage === 'Dashboard' ? (
-          <Dashboard />
-        ) : activePage === 'My Profile' ? (
-          <ProfilePage />
-        ) : activePage === 'Discover Groups' ? (
-          <DiscoverGroupsPage />
-        ) :  activePage === 'Create Group' ? (
-     <CreateGroupPage onNavigate={setActivePage} />
-   ) :(
-          <div className="page-placeholder">
-            <h1>{activePage}</h1>
-            <p>
-              This section will be connected to the EduMatch backend as its feature is implemented.
-            </p>
-          </div>
-        )}
-      </main>
+  {activePage === 'Dashboard' ? (
+    <Dashboard />
+  ) : activePage === 'My Profile' ? (
+    <ProfilePage />
+  ) : activePage === 'Discover Groups' ? (
+    <DiscoverGroupsPage />
+  ) : activePage === 'Create Group' ? (
+    <CreateGroupPage onNavigate={setActivePage} />
+  ) : activePage === 'My Groups' ? (
+    <MyGroupsPage onNavigate={setActivePage} />
+  ) : (
+    <div className="page-placeholder">
+      <h1>{activePage}</h1>
+      <p>
+        This section will be connected to the EduMatch backend as its feature is implemented.
+      </p>
+    </div>
+  )}
+</main>
     </div>
   );
 }

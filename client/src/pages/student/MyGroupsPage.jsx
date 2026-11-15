@@ -5,6 +5,7 @@ import {
   faCircleCheck, faClock, faChevronDown, faChevronUp,
 } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
+import GroupDetailsPage from './GroupDetailsPage';
 import './MyGroupsPage.css';
 
 const numberValue = (value) => {
@@ -37,7 +38,7 @@ function StatusBadge({ status }) {
   );
 }
 
-function GroupCard({ group, expanded, onToggle }) {
+function GroupCard({ group, expanded, onToggle, onViewDetails }) {
   const memberCount = numberValue(group.current_members);
   const maxMembers = numberValue(group.max_members);
   const isOwner = group.membership_role === 'owner';
@@ -68,15 +69,20 @@ function GroupCard({ group, expanded, onToggle }) {
         {isOwner && <div><strong>{pendingRequests}</strong><small>Pending requests</small></div>}
       </div>
 
-      <button
-        type="button"
-        className="mg-details-toggle"
-        onClick={onToggle}
-        aria-expanded={expanded}
-      >
-        {expanded ? 'Hide group information' : 'View group information'}
-        <FontAwesomeIcon icon={expanded ? faChevronUp : faChevronDown} />
-      </button>
+      <div className="mg-card-actions">
+        <button type="button" className="mg-open-details" onClick={onViewDetails}>
+          Open full details <FontAwesomeIcon icon={faArrowRight} />
+        </button>
+        <button
+          type="button"
+          className="mg-details-toggle"
+          onClick={onToggle}
+          aria-expanded={expanded}
+        >
+          {expanded ? 'Hide quick information' : 'Show quick information'}
+          <FontAwesomeIcon icon={expanded ? faChevronUp : faChevronDown} />
+        </button>
+      </div>
 
       {expanded && (
         <div className="mg-expanded">
@@ -108,6 +114,7 @@ export default function MyGroupsPage({ onNavigate }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [expandedGroup, setExpandedGroup] = useState(null);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
 
   const loadGroups = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true);
@@ -141,6 +148,20 @@ export default function MyGroupsPage({ onNavigate }) {
 
   const ownedCount = groups.filter((group) => group.membership_role === 'owner').length;
   const joinedCount = groups.length - ownedCount;
+
+  if (selectedGroupId) {
+    return (
+      <GroupDetailsPage
+        groupId={selectedGroupId.group_id}
+        membershipRole={selectedGroupId.membership_role}
+        onBack={() => setSelectedGroupId(null)}
+        onMembershipChanged={() => {
+          setSelectedGroupId(null);
+          loadGroups(true);
+        }}
+      />
+    );
+  }
 
   if (loading) {
     return <div className="my-groups-page"><div className="mg-loading">Loading your groups…</div></div>;
@@ -198,6 +219,7 @@ export default function MyGroupsPage({ onNavigate }) {
               group={group}
               expanded={expandedGroup === group.group_id}
               onToggle={() => setExpandedGroup((current) => current === group.group_id ? null : group.group_id)}
+              onViewDetails={() => setSelectedGroupId(group)}
             />
           ))}
         </div>
