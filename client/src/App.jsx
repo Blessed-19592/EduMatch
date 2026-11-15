@@ -13,6 +13,7 @@ import DiscoverGroupsPage from './pages/student/DiscoverGroupsPage';
 import CreateGroupPage from './pages/student/CreateGroupPage';
 import MyGroupsPage from './pages/student/MyGroupsPage';
 import FindStudentsPage from './pages/student/FindStudentsPage';
+import MessagesPage from './pages/student/MessagesPage';
 import './components/auth/Auth.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -486,13 +487,15 @@ function StudentWorkspace() {
           <ProfilePage />
           ) : activePage === 'Find Students' ? (
           <FindStudentsPage />
-        ) : activePage === 'Discover Groups' ? (
-          <DiscoverGroupsPage />
-        ) : activePage === 'Create Group' ? (
-          <CreateGroupPage onNavigate={setActivePage} />
-        ) : activePage === 'My Groups' ? (
-          <MyGroupsPage onNavigate={setActivePage} />
-        ) : (
+      ) : activePage === 'Discover Groups' ? (
+  <DiscoverGroupsPage />
+) : activePage === 'Create Group' ? (
+  <CreateGroupPage onNavigate={setActivePage} />
+) : activePage === 'My Groups' ? (
+  <MyGroupsPage onNavigate={setActivePage} />
+) : activePage === 'Messages' ? (
+  <MessagesPage />
+) : (
           <div className="page-placeholder">
             <h1>{activePage}</h1>
             <p>
