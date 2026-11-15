@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getApiErrorMessage } from '../../api/api';
 
 export default function LoginPage() {
-  const { login, isAuthenticated, status } = useAuth();
+  const { login, status } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [form, setForm] = useState({ registrationNumber: location.state?.registrationNumber || '', password: '' });
@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const success = location.state?.message;
   if (status === 'loading') return <div className="auth-loading">Loading EduMatch…</div>;
-  if (isAuthenticated) return <Navigate to="/app" replace />;
+  
 
   const update = (event) => setForm({ ...form, [event.target.name]: event.target.value });
   const submit = async (event) => {
