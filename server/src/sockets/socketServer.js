@@ -329,28 +329,29 @@ handleAuthorizedEvent(
 );
 
 
-        // ======================================
-        // 2. RETRIEVE CHAT HISTORY
-        // ======================================
+         // ======================================
+// 2. RETRIEVE CHAT HISTORY
+// ======================================
 
-        handleAuthorizedEvent(
-            'group:history',
-            async (data, acknowledge, currentUser) => {
-                const validated = historySchema.parse(data);
+handleAuthorizedEvent(
+    'group:history',
+    async (data, acknowledge, currentUser) => {
+        const validated = historySchema.parse(data);
 
-                const messages = await getGroupChatHistory(
-                    validated.groupId,
-                    currentUser.userId,
-                    validated.limit,
-                    validated.before || null
-                );
-
-                acknowledge?.({
-                    status: 'success',
-                    messages
-                });
-            }
+        const messages = await getGroupChatHistory(
+            validated.groupId,
+            currentUser.userId,
+            validated.limit,
+            validated.before || null
         );
+
+        acknowledge?.({
+            status: 'success',
+            groupId: validated.groupId,
+            messages
+        });
+    }
+);
 
 
         // ======================================
