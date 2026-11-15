@@ -9,6 +9,7 @@ import CompleteRegistrationPage from './pages/auth/CompleteRegistrationPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import ProfilePage from './pages/student/ProfilePage';
+import DiscoverGroupsPage from './pages/student/DiscoverGroupsPage';
 import './components/auth/Auth.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -444,6 +445,8 @@ function StudentWorkspace() {
           <Dashboard />
         ) : activePage === 'My Profile' ? (
           <ProfilePage />
+        ) : activePage === 'Discover Groups' ? (
+          <DiscoverGroupsPage />
         ) : (
           <div className="page-placeholder">
             <h1>{activePage}</h1>
