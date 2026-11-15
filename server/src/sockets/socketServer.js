@@ -302,30 +302,31 @@ export const configureSocketServer = (
         };
 
 
-        // ======================================
-        // 1. GROUP CHAT ACCESS
-        // ======================================
+         // ======================================
+// 1. GROUP CHAT ACCESS
+// ======================================
 
-        handleAuthorizedEvent(
-            'group:join',
-            async (data, acknowledge, currentUser) => {
-                const groupId = groupIdSchema.parse(
-                    data?.groupId
-                );
-
-                // Confirms that the student is an active
-                // member before granting chat access.
-                await getGroupChatRoom(
-                    groupId,
-                    currentUser.userId
-                );
-
-                acknowledge?.({
-                    status: 'success',
-                    message: 'Group chat access confirmed.'
-                });
-            }
+handleAuthorizedEvent(
+    'group:join',
+    async (data, acknowledge, currentUser) => {
+        const groupId = groupIdSchema.parse(
+            data?.groupId
         );
+
+        // Verify active membership and retrieve the chat room.
+        const chatRoom = await getGroupChatRoom(
+            groupId,
+            currentUser.userId
+        );
+
+        acknowledge?.({
+            status: 'success',
+            message: 'Group chat access confirmed.',
+            groupId,
+            roomId: chatRoom.room_id
+        });
+    }
+);
 
 
         // ======================================

@@ -8,7 +8,6 @@ import {
     createGroup,
     discoverGroups,
     getGroupDetails,
-    getMyGroups,
     submitMembershipRequest,
     getGroupMembershipRequests,
     respondToMembershipRequest,
