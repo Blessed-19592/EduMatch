@@ -25,6 +25,8 @@ export default function RequestCodePage() {
       <div className="auth-note">We'll send a six-digit verification code to the email address recorded in the student registry.</div>
       <SubmitButton loading={loading} loadingText="Requesting code…">Send verification code</SubmitButton>
     </form>
-    <p className="auth-switch">Already registered? <Link to="/login">Sign in</Link></p>
+    <p className="auth-switch">
+  Already have an account? <Link to="/login" replace>Sign in</Link>
+</p>
   </AuthLayout>;
 }

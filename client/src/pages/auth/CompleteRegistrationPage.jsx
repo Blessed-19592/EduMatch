@@ -30,6 +30,6 @@ export default function CompleteRegistrationPage() {
       <FormField label="Confirm password" name="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Enter your password again" autoComplete="new-password" />
       <SubmitButton loading={loading} loadingText="Creating account…">Create account</SubmitButton>
     </form>
-    <p className="auth-switch">Already have an account? <Link to="/login">Sign in</Link></p>
+    <p className="auth-switch">Already have an account? <Link to="/login" replace>Sign in</Link></p>
   </AuthLayout>;
 }

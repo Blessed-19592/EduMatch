@@ -530,22 +530,50 @@ function RegistrationRoute() {
   return <Outlet />;
 }
 
+function RegistrationRoute() {
+  const { status, isAuthenticated } = useAuth();
+
+  if (status === 'loading') {
+    return <div className="auth-loading">Loading EduMatch…</div>;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/app" replace />} />
+
+      {/* Login */}
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RequestCodePage />} />
-      <Route path="/register/verify" element={<VerifyCodePage />} />
-      <Route path="/register/complete" element={<CompleteRegistrationPage />} />
+
+      {/* Registration - accessible only when NOT authenticated */}
+      <Route element={<RegistrationRoute />}>
+        <Route path="/register" element={<RequestCodePage />} />
+        <Route path="/register/verify" element={<VerifyCodePage />} />
+        <Route path="/register/complete" element={<CompleteRegistrationPage />} />
+      </Route>
+
+      {/* Password recovery */}
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+      {/* Student workspace */}
       <Route element={<ProtectedRoute allowedRoles={['student']} />}>
         <Route path="/app" element={<StudentWorkspace />} />
       </Route>
+
+      {/* Administrator workspace */}
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route path="/admin" element={<AdminLanding />} />
       </Route>
+
+      {/* Unknown routes */}
       <Route path="*" element={<Navigate to="/app" replace />} />
     </Routes>
   );
