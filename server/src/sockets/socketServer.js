@@ -381,10 +381,10 @@ handleAuthorizedEvent(
                 );
 
                 const broadcastMessage = {
-                    ...message,
-                    sender_name: currentUser.fullName
-                };
-
+    ...message,
+    group_id: validated.groupId,
+    sender_name: currentUser.fullName
+};
                 // Retrieve CURRENTLY active group members.
                 // This prevents messages from being sent
                 // to students who have been removed.
