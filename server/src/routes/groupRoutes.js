@@ -8,6 +8,7 @@ import {
     createGroup,
     discoverGroups,
     getGroupDetails,
+    getMyGroups,
     submitMembershipRequest,
     getGroupMembershipRequests,
     respondToMembershipRequest,
@@ -224,7 +225,30 @@ router.get(
     }
 );
 
+// ======================================
+// MY GROUPS
+// ======================================
 
+router.get(
+    '/my-groups',
+    requireStudent,
+    async (req, res, next) => {
+        try {
+            const groups = await getMyGroups(
+                req.currentUser.userId
+            );
+
+            return res.status(200).json({
+                status: 'success',
+                count: groups.length,
+                groups
+            });
+
+        } catch (error) {
+            next(error);
+        }
+    }
+);
 // ======================================
 // VIEW GROUP DETAILS
 // ======================================
