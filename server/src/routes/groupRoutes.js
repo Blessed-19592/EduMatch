@@ -12,7 +12,8 @@ import {
     submitMembershipRequest,
     getGroupMembershipRequests,
     respondToMembershipRequest,
-    leaveGroup
+    leaveGroup,
+    getMyGroups
 } from '../services/groupService.js';
 
 const router = express.Router();
