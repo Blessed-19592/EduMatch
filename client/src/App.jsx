@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useSearchParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
@@ -416,9 +416,42 @@ function Dashboard() {
 }
 
 function StudentWorkspace() {
-  const [activePage, setActivePage] = useState('Dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const { user, logout } = useAuth();
+
+  const pageSlugs = {
+    Dashboard: 'dashboard',
+    'My Profile': 'profile',
+    'Find Students': 'find-students',
+    'Discover Groups': 'discover-groups',
+    'My Groups': 'my-groups',
+    Messages: 'messages',
+    'Create Group': 'create-group',
+    'My Tasks': 'my-tasks',
+    Settings: 'settings',
+  };
+
+  const slugPages = Object.fromEntries(
+    Object.entries(pageSlugs).map(([page, slug]) => [slug, page])
+  );
+
+  const activePage =
+    slugPages[searchParams.get('page')] || 'Dashboard';
+
+  const setActivePage = (page) => {
+    if (page === 'Dashboard') {
+      setSearchParams({});
+      return;
+    }
+
+    const slug = pageSlugs[page];
+
+    if (slug) {
+      setSearchParams({ page: slug });
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -437,32 +470,35 @@ function StudentWorkspace() {
         onLogout={handleLogout}
         onNavigate={setActivePage}
       />
+
       <Sidebar
         activePage={activePage}
         setActivePage={setActivePage}
         open={sidebarOpen}
         closeSidebar={() => setSidebarOpen(false)}
       />
+
       <main className="main-area">
-  {activePage === 'Dashboard' ? (
-    <Dashboard />
-  ) : activePage === 'My Profile' ? (
-    <ProfilePage />
-  ) : activePage === 'Discover Groups' ? (
-    <DiscoverGroupsPage />
-  ) : activePage === 'Create Group' ? (
-    <CreateGroupPage onNavigate={setActivePage} />
-  ) : activePage === 'My Groups' ? (
-    <MyGroupsPage onNavigate={setActivePage} />
-  ) : (
-    <div className="page-placeholder">
-      <h1>{activePage}</h1>
-      <p>
-        This section will be connected to the EduMatch backend as its feature is implemented.
-      </p>
-    </div>
-  )}
-</main>
+        {activePage === 'Dashboard' ? (
+          <Dashboard />
+        ) : activePage === 'My Profile' ? (
+          <ProfilePage />
+        ) : activePage === 'Discover Groups' ? (
+          <DiscoverGroupsPage />
+        ) : activePage === 'Create Group' ? (
+          <CreateGroupPage onNavigate={setActivePage} />
+        ) : activePage === 'My Groups' ? (
+          <MyGroupsPage onNavigate={setActivePage} />
+        ) : (
+          <div className="page-placeholder">
+            <h1>{activePage}</h1>
+            <p>
+              This section will be connected to the EduMatch backend
+              as its feature is implemented.
+            </p>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
