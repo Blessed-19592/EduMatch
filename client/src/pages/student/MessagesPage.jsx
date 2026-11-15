@@ -13,13 +13,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import api, { getApiErrorMessage } from '../../api/api';
 import './MessagesPage.css';
 
-const API_BASE_URL =
-  api.defaults.baseURL ||
-  import.meta.env.VITE_API_URL ||
-  'http://localhost:5000/api';
-
-const SOCKET_URL = API_BASE_URL.replace(/\/api\/?$/, '');
-
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 const formatMessageTime = (date) => {
   if (!date) return '';
 
