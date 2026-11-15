@@ -10,6 +10,7 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import ProfilePage from './pages/student/ProfilePage';
 import DiscoverGroupsPage from './pages/student/DiscoverGroupsPage';
+import CreateGroupPage from './pages/student/CreateGroupPage';
 import './components/auth/Auth.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -54,6 +55,7 @@ const navigation = [
       { label: 'Discover Groups', icon: faUsers },
       { label: 'My Groups', icon: faFolderOpen },
       { label: 'Messages', icon: faComments },
+      { label: 'Create Group', icon: faPlus },
     ],
   },
   {
@@ -447,7 +449,9 @@ function StudentWorkspace() {
           <ProfilePage />
         ) : activePage === 'Discover Groups' ? (
           <DiscoverGroupsPage />
-        ) : (
+        ) :  activePage === 'Create Group' ? (
+     <CreateGroupPage onNavigate={setActivePage} />
+   ) :(
           <div className="page-placeholder">
             <h1>{activePage}</h1>
             <p>

@@ -846,3 +846,87 @@ export const leaveGroup = async (userId, groupId) => {
         client.release();
     }
 };
+
+// Retrieve all groups in which the student has active membership.
+export const getMyGroups = async (studentId) => {
+    const result = await pool.query(
+        `SELECT
+            sg.group_id,
+            sg.group_name,
+            sg.description,
+            sg.max_members,
+            sg.group_status,
+            sg.created_at,
+            sg.updated_at,
+            sg.objectives,
+            sg.expected_deliverables,
+            sg.member_responsibilities,
+            sg.member_expectations,
+            sg.accepts_all_years,
+
+            ci.intention_name,
+
+            gm.membership_role,
+            gm.membership_status,
+            gm.joined_at,
+
+            COUNT(DISTINCT all_members.membership_id)
+                FILTER (
+                    WHERE all_members.membership_status = 'active'
+                ) AS current_members,
+
+            COALESCE(
+                ARRAY_AGG(DISTINCT s.skill_name)
+                    FILTER (WHERE s.skill_id IS NOT NULL),
+                '{}'
+            ) AS required_skills,
+
+            COALESCE(
+                ARRAY_AGG(DISTINCT gay.year_of_study)
+                    FILTER (WHERE gay.year_of_study IS NOT NULL),
+                '{}'
+            ) AS allowed_years,
+
+            (
+                SELECT COUNT(*)
+                FROM collaboration_requests cr
+                WHERE cr.group_id = sg.group_id
+                  AND cr.request_status = 'pending'
+            ) AS pending_requests
+
+        FROM group_members gm
+
+        JOIN student_groups sg
+            ON sg.group_id = gm.group_id
+
+        LEFT JOIN collaboration_intentions ci
+            ON ci.intention_id = sg.intention_id
+
+        LEFT JOIN group_members all_members
+            ON all_members.group_id = sg.group_id
+
+        LEFT JOIN group_required_skills grs
+            ON grs.group_id = sg.group_id
+
+        LEFT JOIN skills s
+            ON s.skill_id = grs.skill_id
+
+        LEFT JOIN group_allowed_years gay
+            ON gay.group_id = sg.group_id
+
+        WHERE gm.student_id = $1
+          AND gm.membership_status = 'active'
+
+        GROUP BY
+            sg.group_id,
+            ci.intention_name,
+            gm.membership_role,
+            gm.membership_status,
+            gm.joined_at
+
+        ORDER BY gm.joined_at DESC`,
+        [studentId]
+    );
+
+    return result.rows;
+};
