@@ -12,6 +12,7 @@ import ProfilePage from './pages/student/ProfilePage';
 import DiscoverGroupsPage from './pages/student/DiscoverGroupsPage';
 import CreateGroupPage from './pages/student/CreateGroupPage';
 import MyGroupsPage from './pages/student/MyGroupsPage';
+import FindStudentsPage from './pages/student/FindStudentsPage';
 import './components/auth/Auth.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -483,6 +484,8 @@ function StudentWorkspace() {
           <Dashboard />
         ) : activePage === 'My Profile' ? (
           <ProfilePage />
+          ) : activePage === 'Find Students' ? (
+          <FindStudentsPage />
         ) : activePage === 'Discover Groups' ? (
           <DiscoverGroupsPage />
         ) : activePage === 'Create Group' ? (

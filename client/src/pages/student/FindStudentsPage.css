@@ -1,0 +1,302 @@
+.find-students-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 32px 40px;
+  box-sizing: border-box;
+}
+
+.find-students-heading,
+.find-students-filter-heading,
+.find-students-results-heading,
+.find-student-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.find-students-heading {
+  margin-bottom: 28px;
+}
+
+.find-students-heading h1 {
+  margin: 8px 0;
+  font-size: clamp(26px, 4vw, 34px);
+}
+
+.find-students-heading p,
+.find-students-filter p,
+.find-students-results-heading p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.page-eyebrow {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.find-students-filter {
+  padding: 22px;
+  margin-bottom: 30px;
+}
+
+.find-students-filter-heading h2,
+.find-students-results-heading h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.find-students-filter-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.find-students-year-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.year-filter-button {
+  border: 1px solid #dbe2ea;
+  border-radius: 9px;
+  background: white;
+  color: #475569;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.year-filter-button:hover,
+.year-filter-button.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.filter-hint {
+  margin-top: 14px !important;
+  font-size: 13px;
+}
+
+.find-students-results-heading {
+  margin-bottom: 18px;
+}
+
+.find-students-count {
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 20px;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.find-students-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.find-student-card {
+  padding: 22px;
+  min-width: 0;
+}
+
+.find-student-card-top {
+  justify-content: flex-start;
+}
+
+.find-student-avatar,
+.find-students-empty-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.find-student-identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.find-student-identity h3 {
+  margin: 0 0 5px;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.find-student-identity span,
+.match-score span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.match-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.match-score strong {
+  color: #15803d;
+  font-size: 22px;
+}
+
+.find-student-academics {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 16px 0;
+  border-top: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.find-student-academics p {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.find-student-academics svg {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.match-reasons {
+  margin-top: 17px;
+}
+
+.match-reasons h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.match-reasons h4 svg {
+  color: #2563eb;
+}
+
+.match-reasons ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 19px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.find-students-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 48px 20px;
+}
+
+.find-students-empty h3 {
+  margin: 0;
+}
+
+.find-students-empty p {
+  max-width: 440px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.find-students-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.find-students-error span {
+  flex: 1;
+}
+
+.find-students-error button {
+  border: 0;
+  background: transparent;
+  color: #991b1b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.find-students-spinning {
+  animation: find-students-spin 1s linear infinite;
+}
+
+@keyframes find-students-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .find-students-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .find-students-heading {
+    align-items: flex-start;
+  }
+
+  .find-students-filter {
+    padding: 17px;
+  }
+}
+
+@media (max-width: 480px) {
+  .find-students-heading {
+    flex-direction: column;
+  }
+
+  .find-students-filter-heading {
+    align-items: flex-start;
+  }
+
+  .find-student-card {
+    padding: 17px;
+  }
+
+  .find-students-error {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .find-students-page {
+    padding: 22px 20px 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .find-students-page {
+    padding: 18px 14px 28px;
+  }
+}
