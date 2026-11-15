@@ -530,19 +530,7 @@ function RegistrationRoute() {
   return <Outlet />;
 }
 
-function RegistrationRoute() {
-  const { status, isAuthenticated } = useAuth();
 
-  if (status === 'loading') {
-    return <div className="auth-loading">Loading EduMatch…</div>;
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <Outlet />;
-}
 
 function AppRoutes() {
   return (
