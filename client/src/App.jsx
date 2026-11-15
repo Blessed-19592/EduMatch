@@ -8,6 +8,7 @@ import VerifyCodePage from './pages/auth/VerifyCodePage';
 import CompleteRegistrationPage from './pages/auth/CompleteRegistrationPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import ProfilePage from './pages/student/ProfilePage';
 import './components/auth/Auth.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -68,7 +69,7 @@ const navigation = [
   },
 ];
 
-function Topbar({ activePage, openSidebar, user, onLogout }) {
+function Topbar({ activePage, openSidebar, user, onLogout, onNavigate }) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   return (
@@ -142,7 +143,7 @@ function Topbar({ activePage, openSidebar, user, onLogout }) {
 
           {profileOpen && (
             <div className="profile-dropdown">
-              <button onClick={() => setProfileOpen(false)}>
+              <button onClick={() => { setProfileOpen(false); onNavigate('My Profile'); }}>
                 My Profile
               </button>
 
@@ -430,6 +431,7 @@ function StudentWorkspace() {
         openSidebar={() => setSidebarOpen(true)}
         user={user}
         onLogout={handleLogout}
+        onNavigate={setActivePage}
       />
       <Sidebar
         activePage={activePage}
@@ -440,6 +442,8 @@ function StudentWorkspace() {
       <main className="main-area">
         {activePage === 'Dashboard' ? (
           <Dashboard />
+        ) : activePage === 'My Profile' ? (
+          <ProfilePage />
         ) : (
           <div className="page-placeholder">
             <h1>{activePage}</h1>
