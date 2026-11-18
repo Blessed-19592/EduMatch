@@ -117,7 +117,11 @@ export default function PortfolioPage() {
         api.get('/students/me/assessments'),
       ]);
 
-      setProfile(profileRes.data?.profile || profileRes.data);
+      setProfile(
+  profileRes.data?.data ||
+  profileRes.data?.profile ||
+  profileRes.data
+);
       setPortfolios(getArray(portfolioRes.data, 'portfolios'));
       setSkills(getArray(skillsRes.data, 'skills'));
       setAssessments(getArray(assessmentsRes.data, 'assessments'));
