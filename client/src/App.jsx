@@ -15,6 +15,7 @@ import MyGroupsPage from './pages/student/MyGroupsPage';
 import FindStudentsPage from './pages/student/FindStudentsPage';
 import MessagesPage from './pages/student/MessagesPage';
 import TasksPage from './pages/student/TasksPage';
+import PortfolioPage from './pages/student/PortfolioPage';
 import './components/auth/Auth.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -63,11 +64,12 @@ const navigation = [
     ],
   },
   {
-    title: 'PRODUCTIVITY',
-    items: [
-      { label: 'My Tasks', icon: faClipboardCheck },
-    ],
-  },
+  title: 'PRODUCTIVITY',
+  items: [
+    { label: 'My Tasks', icon: faClipboardCheck },
+    { label: 'Portfolio & Skills', icon: faFolderOpen },
+  ],
+},
   {
     title: 'PREFERENCES',
     items: [
