@@ -14,6 +14,7 @@ import CreateGroupPage from './pages/student/CreateGroupPage';
 import MyGroupsPage from './pages/student/MyGroupsPage';
 import FindStudentsPage from './pages/student/FindStudentsPage';
 import MessagesPage from './pages/student/MessagesPage';
+import TasksPage from './pages/student/TasksPage';
 import './components/auth/Auth.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -495,6 +496,8 @@ function StudentWorkspace() {
   <MyGroupsPage onNavigate={setActivePage} />
 ) : activePage === 'Messages' ? (
   <MessagesPage />
+) : activePage === 'My Tasks' ? (
+  <TasksPage />
 ) : (
           <div className="page-placeholder">
             <h1>{activePage}</h1>
