@@ -7,7 +7,7 @@ import skillInterestRoutes from './routes/skillInterestRoutes.js';
 import studentProfileRoutes from './routes/studentProfileRoutes.js';
 import dotenv from 'dotenv';
 dotenv.config();
-
+import groupInvitationRoutes from './routes/groupInvitationRoutes.js';
 import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 
@@ -332,7 +332,7 @@ app.use('/api', csrfProtection);
 app.use('/api/auth', authRoutes);
 
 app.use('/api/groups', groupRoutes);
-
+app.use('/api/group-invitations', groupInvitationRoutes);
 app.use('/api/groups', taskRoutes);
 app.use('/api/students', studentProfileRoutes);
 app.use('/api', skillInterestRoutes);

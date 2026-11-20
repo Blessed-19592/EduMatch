@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { requireStudent } from '../middleware/requireRole.js';
 
+
 import {
     createGroup,
     discoverGroups,
@@ -14,12 +15,20 @@ import {
     leaveGroup,
     getMyGroups
 } from '../services/groupService.js';
+import {
+    getEligibleCollaborators,
+    sendGroupInvitation
+} from '../services/groupInvitationService.js';
 
 const router = express.Router();
 
 const uuidSchema = z.string().uuid();
 
 const academicYearSchema = z.number().int().min(1).max(4);
+const sendInvitationSchema = z.object({
+    inviteeId: uuidSchema,
+    message: z.string().trim().max(1000).optional().nullable()
+});
 
 // ======================================
 // CREATE GROUP VALIDATION
@@ -49,6 +58,7 @@ const createGroupSchema = z.object({
     allowedYears: z.array(academicYearSchema).max(4).default([])
 
 }).strict()
+
 
 .superRefine((data, ctx) => {
     const uniqueYears = new Set(data.allowedYears);
@@ -250,6 +260,48 @@ router.get(
     }
 );
 
+// GET /api/groups/:groupId/eligible-collaborators
+router.get('/:groupId/eligible-collaborators', async (req, res, next) => {
+    try {
+        const groupId = uuidSchema.parse(req.params.groupId);
+
+        const students = await getEligibleCollaborators(
+            groupId,
+            req.currentUser.userId
+        );
+
+        res.status(200).json({
+            status: 'success',
+            results: students.length,
+            data: { students }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// POST /api/groups/:groupId/invitations
+router.post('/:groupId/invitations', async (req, res, next) => {
+    try {
+        const groupId = uuidSchema.parse(req.params.groupId);
+        const { inviteeId, message } = sendInvitationSchema.parse(req.body);
+
+        const invitation = await sendGroupInvitation(
+            groupId,
+            req.currentUser.userId,
+            inviteeId,
+            message
+        );
+
+        res.status(201).json({
+            status: 'success',
+            message: 'Group invitation sent successfully.',
+            data: { invitation }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
 // ======================================
 // VIEW GROUP DETAILS
 // ======================================

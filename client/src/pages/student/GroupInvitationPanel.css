@@ -1,0 +1,117 @@
+.group-invitation-panel {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+}
+
+.group-invitation-heading {
+    margin-bottom: 1.25rem;
+}
+
+.group-invitation-heading h3 {
+    margin: 0 0 0.4rem;
+    color: #111827;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.group-invitation-heading p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.group-invitation-panel form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.group-invitation-panel label {
+    color: #374151;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.group-invitation-panel select,
+.group-invitation-panel textarea {
+    width: 100%;
+    padding: 0.75rem;
+    color: #111827;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font: inherit;
+}
+
+.group-invitation-panel textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.group-invitation-panel select:focus,
+.group-invitation-panel textarea:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+    border-color: #2563eb;
+}
+
+.group-invitation-panel form button {
+    align-self: flex-start;
+    margin-top: 0.5rem;
+    padding: 0.7rem 1.2rem;
+    color: #ffffff;
+    background: #2563eb;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.group-invitation-panel form button:hover:not(:disabled) {
+    background: #1d4ed8;
+}
+
+.group-invitation-panel form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.invitation-feedback,
+.invitation-empty,
+.invitation-loading {
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.invitation-feedback.error {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+.invitation-feedback.success {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.invitation-empty,
+.invitation-loading {
+    color: #4b5563;
+    background: #f3f4f6;
+}
+
+@media (max-width: 600px) {
+    .group-invitation-panel {
+        padding: 1rem;
+    }
+
+    .group-invitation-panel form button {
+        width: 100%;
+    }
+}
