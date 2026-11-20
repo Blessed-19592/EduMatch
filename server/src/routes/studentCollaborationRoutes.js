@@ -22,10 +22,21 @@ const responseSchema = z.object({
     decision: z.enum(['accepted', 'declined'])
 });
 
+const uuidSchema = z.string().uuid();
 
-// Send a request to another student.
+
+// Send a collaboration request to another student.
 router.post('/:studentId', async (req, res, next) => {
     try {
+        const studentIdValidation = uuidSchema.safeParse(req.params.studentId);
+
+        if (!studentIdValidation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid student ID.'
+            });
+        }
+
         const validation = sendRequestSchema.safeParse(req.body);
 
         if (!validation.success) {
@@ -37,11 +48,11 @@ router.post('/:studentId', async (req, res, next) => {
 
         const request = await sendStudentCollaborationRequest(
             req.currentUser.userId,
-            req.params.studentId,
+            studentIdValidation.data,
             validation.data.message
         );
 
-        res.status(201).json({
+        return res.status(201).json({
             status: 'success',
             message: 'Collaboration request sent successfully.',
             data: request
@@ -53,7 +64,7 @@ router.post('/:studentId', async (req, res, next) => {
 });
 
 
-// Get sent or received requests.
+// Get sent or received collaboration requests.
 router.get('/', async (req, res, next) => {
     try {
         const type = req.query.type || 'received';
@@ -70,7 +81,7 @@ router.get('/', async (req, res, next) => {
             type
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             status: 'success',
             data: requests
         });
@@ -81,9 +92,18 @@ router.get('/', async (req, res, next) => {
 });
 
 
-// Accept or decline a received request.
+// Accept or decline a received collaboration request.
 router.patch('/:requestId/respond', async (req, res, next) => {
     try {
+        const requestIdValidation = uuidSchema.safeParse(req.params.requestId);
+
+        if (!requestIdValidation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid request ID.'
+            });
+        }
+
         const validation = responseSchema.safeParse(req.body);
 
         if (!validation.success) {
@@ -94,12 +114,12 @@ router.patch('/:requestId/respond', async (req, res, next) => {
         }
 
         const request = await respondToStudentCollaborationRequest(
-            req.params.requestId,
+            requestIdValidation.data,
             req.currentUser.userId,
             validation.data.decision
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             status: 'success',
             message: `Collaboration request ${validation.data.decision}.`,
             data: request
@@ -111,15 +131,24 @@ router.patch('/:requestId/respond', async (req, res, next) => {
 });
 
 
-// Cancel a request sent by the current student.
+// Cancel a pending request sent by the current student.
 router.patch('/:requestId/cancel', async (req, res, next) => {
     try {
+        const requestIdValidation = uuidSchema.safeParse(req.params.requestId);
+
+        if (!requestIdValidation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid request ID.'
+            });
+        }
+
         const request = await cancelStudentCollaborationRequest(
-            req.params.requestId,
+            requestIdValidation.data,
             req.currentUser.userId
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             status: 'success',
             message: 'Collaboration request cancelled.',
             data: request

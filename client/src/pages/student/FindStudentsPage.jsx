@@ -1,9 +1,7 @@
-
 import './FindStudentsPage.css';
 import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import {
-  Search,
   RefreshCw,
   Users,
   GraduationCap,
@@ -12,6 +10,9 @@ import {
   Filter,
   UserRound,
   AlertCircle,
+  Send,
+  X,
+  CheckCircle,
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -26,7 +27,21 @@ function getErrorMessage(error) {
   );
 }
 
-function MatchCard({ student }) {
+function MatchCard({
+  student,
+  onRequest,
+  isRequesting,
+  requestSent,
+  activeRequest,
+  onOpenRequest,
+  onCloseRequest,
+  message,
+  onMessageChange,
+  onSubmitRequest,
+  feedback,
+}) {
+  const isActive = activeRequest === student.studentId;
+
   return (
     <article className="content-card find-student-card">
       <div className="find-student-card-top">
@@ -77,6 +92,97 @@ function MatchCard({ student }) {
           </ul>
         </div>
       )}
+
+      <div className="find-student-request-section">
+        {requestSent ? (
+          <div className="collaboration-request-success">
+            <CheckCircle size={17} />
+            Request sent
+          </div>
+        ) : (
+          <>
+            {!isActive && (
+              <button
+                type="button"
+                className="primary-button collaboration-request-button"
+                onClick={() => onOpenRequest(student.studentId)}
+              >
+                <Send size={16} />
+                Request to Collaborate
+              </button>
+            )}
+
+            {isActive && (
+              <form
+                className="collaboration-request-form"
+                onSubmit={(event) => onSubmitRequest(event, student.studentId)}
+              >
+                <label htmlFor={`message-${student.studentId}`}>
+                  Introduce yourself and explain why you'd like to collaborate.
+                </label>
+
+                <textarea
+                  id={`message-${student.studentId}`}
+                  value={message}
+                  onChange={(event) => onMessageChange(event.target.value)}
+                  placeholder="Hi! I noticed we share similar interests. I'd like us to collaborate on..."
+                  minLength={10}
+                  maxLength={1000}
+                  rows={4}
+                  required
+                />
+
+                <div className="collaboration-message-count">
+                  {message.length}/1000 characters
+                </div>
+
+                {feedback && (
+                  <p className="collaboration-request-error" role="alert">
+                    {feedback}
+                  </p>
+                )}
+
+                <div className="collaboration-request-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={onCloseRequest}
+                    disabled={isRequesting}
+                  >
+                    <X size={15} />
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="primary-button"
+                    disabled={
+                      isRequesting ||
+                      message.trim().length < 10 ||
+                      message.length > 1000
+                    }
+                  >
+                    {isRequesting ? (
+                      <>
+                        <RefreshCw
+                          size={15}
+                          className="find-students-spinning"
+                        />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={15} />
+                        Send Request
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </>
+        )}
+      </div>
     </article>
   );
 }
@@ -87,6 +193,12 @@ export default function FindStudentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  const [activeRequest, setActiveRequest] = useState(null);
+  const [message, setMessage] = useState('');
+  const [sendingRequest, setSendingRequest] = useState(false);
+  const [sentRequests, setSentRequests] = useState(new Set());
+  const [requestFeedback, setRequestFeedback] = useState({});
 
   const fetchMatches = useCallback(async (years = selectedYears) => {
     setError('');
@@ -136,6 +248,61 @@ export default function FindStudentsPage() {
   function refreshMatches() {
     setRefreshing(true);
     fetchMatches(selectedYears);
+  }
+
+  function openRequestForm(studentId) {
+    setActiveRequest(studentId);
+    setMessage('');
+    setRequestFeedback({});
+  }
+
+  function closeRequestForm() {
+    if (sendingRequest) return;
+
+    setActiveRequest(null);
+    setMessage('');
+    setRequestFeedback({});
+  }
+
+  async function handleSendRequest(event, studentId) {
+    event.preventDefault();
+
+    if (message.trim().length < 10 || message.trim().length > 1000) {
+      setRequestFeedback({
+        [studentId]: 'Your message must contain between 10 and 1000 characters.',
+      });
+      return;
+    }
+
+    setSendingRequest(true);
+    setRequestFeedback({});
+
+    try {
+      await axios.post(
+        `${API_URL}/api/student-collaboration-requests/${studentId}`,
+        {
+          message: message.trim(),
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+      setSentRequests((current) => {
+        const updated = new Set(current);
+        updated.add(studentId);
+        return updated;
+      });
+
+      setActiveRequest(null);
+      setMessage('');
+    } catch (err) {
+      setRequestFeedback({
+        [studentId]: getErrorMessage(err),
+      });
+    } finally {
+      setSendingRequest(false);
+    }
   }
 
   return (
@@ -247,6 +414,7 @@ export default function FindStudentsPage() {
             Try selecting different academic years or check back when
             more students have completed their profiles.
           </p>
+
           {selectedYears.length > 0 && (
             <button
               type="button"
@@ -263,6 +431,15 @@ export default function FindStudentsPage() {
             <MatchCard
               key={student.studentId}
               student={student}
+              onOpenRequest={openRequestForm}
+              onCloseRequest={closeRequestForm}
+              activeRequest={activeRequest}
+              message={message}
+              onMessageChange={setMessage}
+              onSubmitRequest={handleSendRequest}
+              isRequesting={sendingRequest}
+              requestSent={sentRequests.has(student.studentId)}
+              feedback={requestFeedback[student.studentId]}
             />
           ))}
         </div>
