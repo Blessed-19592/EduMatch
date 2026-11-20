@@ -13,6 +13,7 @@ import {
     getGroupMembershipRequests,
     respondToMembershipRequest,
     leaveGroup,
+    getMembershipRequests,
     getMyGroups
 } from '../services/groupService.js';
 import {
@@ -297,6 +298,31 @@ router.post('/:groupId/invitations', async (req, res, next) => {
             status: 'success',
             message: 'Group invitation sent successfully.',
             data: { invitation }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+// GET /api/groups/requests?type=received|sent
+router.get('/requests', async (req, res, next) => {
+    try {
+        const type = req.query.type || 'received';
+
+        if (!['received', 'sent'].includes(type)) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Type must be received or sent.'
+            });
+        }
+
+        const requests = await getMembershipRequests(
+            req.currentUser.userId,
+            type
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: { requests }
         });
     } catch (error) {
         next(error);
