@@ -18,6 +18,7 @@ import MessagesPage from './pages/student/MessagesPage';
 import TasksPage from './pages/student/TasksPage';
 import PortfolioPage from './pages/student/PortfolioPage';
 import './components/auth/Auth.css';
+import GroupInvitationsPage from './pages/student/GroupInvitationsPage';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -535,6 +536,7 @@ function StudentWorkspace() {
           <FindStudentsPage />
         ) : activePage === 'Collaboration Requests' ? (
           <CollaborationRequestsPage />
+          : activePage === 'Group Invitations' ? <GroupInvitationsPage />
         ) : activePage === 'Discover Groups' ? (
           <DiscoverGroupsPage />
         ) : activePage === 'Create Group' ? (

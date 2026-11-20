@@ -331,7 +331,46 @@ export const getGroupMembershipRequests = async (
 
     return result.rows;
 };
+export const getMembershipRequests = async (studentId, type) => {
+    if (!['received', 'sent'].includes(type)) {
+        throw new AppError('Invalid membership request type.', 400);
+    }
 
+    const result = await pool.query(
+        `
+        SELECT
+            cr.request_id,
+            cr.group_id,
+            cr.student_id,
+            cr.message,
+            cr.request_status,
+            cr.created_at,
+            cr.updated_at,
+            sg.group_name,
+            sg.group_status,
+            sg.max_members,
+            CASE
+                WHEN $2 = 'received' THEN requester.full_name
+                ELSE owner.full_name
+            END AS other_student_name
+        FROM collaboration_requests cr
+        JOIN student_groups sg
+            ON sg.group_id = cr.group_id
+        JOIN users requester
+            ON requester.user_id = cr.student_id
+        JOIN users owner
+            ON owner.user_id = sg.created_by
+        WHERE
+            ($2 = 'received' AND sg.created_by = $1)
+            OR
+            ($2 = 'sent' AND cr.student_id = $1)
+        ORDER BY cr.created_at DESC
+        `,
+        [studentId, type]
+    );
+
+    return result.rows;
+};
 
 // Accept or reject a membership request.
 export const respondToMembershipRequest = async (
