@@ -29,9 +29,8 @@ function getErrorMessage(error) {
 
 function MatchCard({
   student,
-  onRequest,
   isRequesting,
-  requestSent,
+  requestStatus,
   activeRequest,
   onOpenRequest,
   onCloseRequest,
@@ -41,9 +40,6 @@ function MatchCard({
   feedback,
 }) {
   const isActive = activeRequest === student.studentId;
-useEffect(() => {
-  fetchExistingRequests();
-}, []);
 
   return (
     <article className="content-card find-student-card">
@@ -97,10 +93,16 @@ useEffect(() => {
       )}
 
       <div className="find-student-request-section">
-        {requestSent ? (
+
+        {requestStatus === 'accepted' ? (
           <div className="collaboration-request-success">
             <CheckCircle size={17} />
-            Request sent
+            Collaboration accepted
+          </div>
+        ) : requestStatus === 'pending' ? (
+          <div className="collaboration-request-success">
+            <CheckCircle size={17} />
+            Request pending
           </div>
         ) : (
           <>
@@ -203,6 +205,49 @@ export default function FindStudentsPage() {
   const [requestStatuses, setRequestStatuses] = useState({});
   const [requestFeedback, setRequestFeedback] = useState({});
 
+  // Retrieve existing sent and received requests.
+  const fetchExistingRequests = useCallback(async () => {
+    try {
+      const [sentResponse, receivedResponse] = await Promise.all([
+        api.get('/student-collaboration-requests', {
+          params: { type: 'sent' },
+        }),
+        api.get('/student-collaboration-requests', {
+          params: { type: 'received' },
+        }),
+      ]);
+
+      const statuses = {};
+
+      const allRequests = [
+        ...(sentResponse.data.data || []),
+        ...(receivedResponse.data.data || []),
+      ];
+
+      allRequests.forEach((request) => {
+        if (
+          ['pending', 'accepted'].includes(request.request_status)
+        ) {
+          const existing = statuses[request.student_id];
+
+          if (
+            !existing ||
+            request.request_status === 'accepted'
+          ) {
+            statuses[request.student_id] = request.request_status;
+          }
+        }
+      });
+
+      setRequestStatuses(statuses);
+    } catch (err) {
+      console.error(
+        'Unable to load existing collaboration requests:',
+        err
+      );
+    }
+  }, []);
+
   const fetchMatches = useCallback(async (years = selectedYears) => {
     setError('');
     setLoading(true);
@@ -228,9 +273,14 @@ export default function FindStudentsPage() {
     }
   }, [selectedYears]);
 
+  // Load matches and existing requests when the page opens.
   useEffect(() => {
     fetchMatches(selectedYears);
   }, [fetchMatches]);
+
+  useEffect(() => {
+    fetchExistingRequests();
+  }, [fetchExistingRequests]);
 
   function toggleYear(year) {
     setSelectedYears((current) =>
@@ -247,6 +297,7 @@ export default function FindStudentsPage() {
   function refreshMatches() {
     setRefreshing(true);
     fetchMatches(selectedYears);
+    fetchExistingRequests();
   }
 
   function openRequestForm(studentId) {
@@ -278,17 +329,16 @@ export default function FindStudentsPage() {
 
     try {
       await api.post(
-  `/student-collaboration-requests/${studentId}`,
-  {
-    message: message.trim(),
-  }
-);
+        `/student-collaboration-requests/${studentId}`,
+        {
+          message: message.trim(),
+        }
+      );
 
-      setSentRequests((current) => {
-        const updated = new Set(current);
-        updated.add(studentId);
-        return updated;
-      });
+      setRequestStatuses((current) => ({
+        ...current,
+        [studentId]: 'pending',
+      }));
 
       setActiveRequest(null);
       setMessage('');
@@ -434,7 +484,7 @@ export default function FindStudentsPage() {
               onMessageChange={setMessage}
               onSubmitRequest={handleSendRequest}
               isRequesting={sendingRequest}
-              requestSent={sentRequests.has(student.studentId)}
+              requestStatus={requestStatuses[student.studentId]}
               feedback={requestFeedback[student.studentId]}
             />
           ))}
@@ -442,42 +492,4 @@ export default function FindStudentsPage() {
       ) : null}
     </section>
   );
-  async function fetchExistingRequests() {
-  try {
-    const [sentResponse, receivedResponse] = await Promise.all([
-      api.get('/student-collaboration-requests', {
-        params: { type: 'sent' },
-      }),
-      api.get('/student-collaboration-requests', {
-        params: { type: 'received' },
-      }),
-    ]);
-
-    const statuses = {};
-
-    const allRequests = [
-      ...(sentResponse.data.data || []),
-      ...(receivedResponse.data.data || []),
-    ];
-
-    allRequests.forEach((request) => {
-      if (
-        ['pending', 'accepted'].includes(request.request_status)
-      ) {
-        const existing = statuses[request.student_id];
-
-        if (
-          !existing ||
-          request.request_status === 'accepted'
-        ) {
-          statuses[request.student_id] = request.request_status;
-        }
-      }
-    });
-
-    setRequestStatuses(statuses);
-  } catch (error) {
-    console.error('Unable to load existing collaboration requests:', error);
-  }
-}
 }
