@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import api, { getApiErrorMessage } from '../../api/api';
 import MembershipRequestsPage from './MembershipRequestsPage';
+import GroupInvitationPanel from './GroupInvitationPanel';
 import './GroupDetailsPage.css';
 
 const unwrapGroup = (payload) => payload?.group || payload?.data?.group || payload?.data || null;
@@ -98,7 +99,9 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
   }
 
   const isMember = group.is_member === true || group.membership_status === 'active';
-  const full = String(group.group_status || '').toLowerCase() === 'full' || (maxMembers > 0 && memberCount >= maxMembers);
+  const groupStatus = String(group.group_status || '').toLowerCase();
+  const full = groupStatus === 'full' || (maxMembers > 0 && memberCount >= maxMembers);
+  const isOpen = groupStatus === 'open' && !full;
 
   return (
     <div className="group-details-page">
@@ -162,13 +165,21 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
       )}
 
       {isOwner && (
-        <div className="gd-owner-note">
-          <div>
-            <strong>Manage membership requests</strong>
-            <p>Review students who have asked to join this group.</p>
+        <>
+          <div className="gd-owner-note">
+            <div>
+              <strong>Manage membership requests</strong>
+              <p>Review students who have asked to join this group.</p>
+            </div>
+            <button type="button" className="gd-requests-button" onClick={() => setShowRequests(true)}>
+              View requests
+            </button>
           </div>
-          <button type="button" className="gd-requests-button" onClick={() => setShowRequests(true)}>View requests</button>
-        </div>
+
+          {isOpen && (
+            <GroupInvitationPanel groupId={groupId} />
+          )}
+        </>
       )}
     </div>
   );

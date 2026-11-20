@@ -1,0 +1,363 @@
+.group-invitations-page {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    color: #1e293b;
+}
+
+.gi-header {
+    margin-bottom: 2rem;
+}
+
+.gi-eyebrow {
+    display: inline-block;
+    margin-bottom: 0.6rem;
+    color: #2563eb;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+}
+
+.gi-header h1 {
+    margin: 0 0 0.5rem;
+    color: #0f172a;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.gi-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Tabs */
+
+.gi-tabs {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.gi-tabs button {
+    position: relative;
+    padding: 0.85rem 0.25rem;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.gi-tabs button:hover {
+    color: #2563eb;
+}
+
+.gi-tabs button.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+}
+
+/* Alerts */
+
+.gi-alert {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding: 0.9rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.gi-alert.success {
+    color: #166534;
+    background: #dcfce7;
+    border: 1px solid #bbf7d0;
+}
+
+.gi-alert.error {
+    color: #991b1b;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+}
+
+.gi-alert button {
+    padding: 0.4rem 0.75rem;
+    color: inherit;
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Invitation cards */
+
+.gi-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.gi-card {
+    padding: 1.35rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.035);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.gi-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 5px 16px rgba(15, 23, 42, 0.06);
+}
+
+.gi-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.gi-type-label {
+    display: inline-block;
+    margin-bottom: 0.45rem;
+    color: #2563eb;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.9px;
+}
+
+.gi-card-info h2 {
+    margin: 0 0 0.45rem;
+    color: #0f172a;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.gi-person {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.88rem;
+}
+
+.gi-person strong {
+    color: #334155;
+    font-weight: 600;
+}
+
+/* Status badges */
+
+.gi-status {
+    flex-shrink: 0;
+    padding: 0.4rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.gi-status.pending {
+    color: #92400e;
+    background: #fef3c7;
+}
+
+.gi-status.accepted {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.gi-status.declined {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+.gi-status.cancelled {
+    color: #475569;
+    background: #e2e8f0;
+}
+
+/* Message */
+
+.gi-message {
+    margin-top: 1.2rem;
+    padding: 0.9rem 1rem;
+    background: #f8fafc;
+    border-left: 3px solid #cbd5e1;
+    border-radius: 0 8px 8px 0;
+}
+
+.gi-message span {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.gi-message p {
+    margin: 0;
+    color: #334155;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+/* Card footer */
+
+.gi-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.gi-date {
+    color: #94a3b8;
+    font-size: 0.8rem;
+}
+
+.gi-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.gi-actions button,
+.gi-cancel-button {
+    padding: 0.65rem 1rem;
+    border-radius: 7px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.gi-decline-button {
+    color: #475569;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+}
+
+.gi-decline-button:hover:not(:disabled) {
+    background: #f1f5f9;
+}
+
+.gi-accept-button {
+    color: #ffffff;
+    background: #2563eb;
+    border: 1px solid #2563eb;
+}
+
+.gi-accept-button:hover:not(:disabled) {
+    background: #1d4ed8;
+}
+
+.gi-cancel-button {
+    color: #b91c1c;
+    background: #ffffff;
+    border: 1px solid #fecaca;
+}
+
+.gi-cancel-button:hover:not(:disabled) {
+    background: #fef2f2;
+}
+
+.gi-actions button:disabled,
+.gi-cancel-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Empty and loading states */
+
+.gi-state,
+.gi-empty-state {
+    padding: 3.5rem 1.5rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.gi-state {
+    color: #64748b;
+}
+
+.gi-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 1rem;
+    color: #2563eb;
+    background: #eff6ff;
+    border-radius: 50%;
+    font-size: 1.5rem;
+}
+
+.gi-empty-state h2 {
+    margin: 0 0 0.5rem;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.gi-empty-state p {
+    max-width: 430px;
+    margin: 0 auto;
+    color: #64748b;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .group-invitations-page {
+        padding: 1.25rem 1rem;
+    }
+
+    .gi-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .gi-card {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .gi-card-top {
+        flex-direction: column;
+    }
+
+    .gi-card-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .gi-actions {
+        width: 100%;
+    }
+
+    .gi-actions button {
+        flex: 1;
+    }
+
+    .gi-cancel-button {
+        width: 100%;
+    }
+}

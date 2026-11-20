@@ -58,7 +58,15 @@ const navigation = [
     title: 'COLLABORATION',
     items: [
       { label: 'Find Students', icon: faGlobe },
-      { label: 'Collaboration Requests', icon: faBell },
+      {
+        label: 'Requests',
+        icon: faBell,
+        children: [
+          { label: 'Collaboration Requests' },
+          { label: 'Group Invitations' },
+          { label: 'Membership Requests' },
+        ],
+      },
       { label: 'Discover Groups', icon: faUsers },
       { label: 'My Groups', icon: faFolderOpen },
       { label: 'Messages', icon: faComments },
@@ -66,12 +74,12 @@ const navigation = [
     ],
   },
   {
-  title: 'PRODUCTIVITY',
-  items: [
-    { label: 'My Tasks', icon: faClipboardCheck },
-    { label: 'Portfolio & Skills', icon: faFolderOpen },
-  ],
-},
+    title: 'PRODUCTIVITY',
+    items: [
+      { label: 'My Tasks', icon: faClipboardCheck },
+      { label: 'Portfolio & Skills', icon: faFolderOpen },
+    ],
+  },
   {
     title: 'PREFERENCES',
     items: [
@@ -174,6 +182,18 @@ function Topbar({ activePage, openSidebar, user, onLogout, onNavigate }) {
 }
 
 function Sidebar({ activePage, setActivePage, open, closeSidebar }) {
+  const requestPages = [
+    'Collaboration Requests',
+    'Group Invitations',
+    'Membership Requests',
+  ];
+
+  const [requestsExpanded, setRequestsExpanded] = useState(
+    requestPages.includes(activePage)
+  );
+
+  const isRequestActive = requestPages.includes(activePage);
+
   return (
     <>
       <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
@@ -182,25 +202,79 @@ function Sidebar({ activePage, setActivePage, open, closeSidebar }) {
             <div className="nav-section" key={section.title}>
               <p className="nav-heading">{section.title}</p>
 
-              {section.items.map((item) => (
-                <button
-                  key={item.label}
-                  className={`nav-item ${
-                    activePage === item.label ? 'active' : ''
-                  }`}
-                  onClick={() => {
-                    setActivePage(item.label);
-                    closeSidebar();
-                  }}
-                >
-                  <FontAwesomeIcon
-                    icon={item.icon}
-                    className="nav-icon"
-                  />
+              {section.items.map((item) => {
+                if (item.children) {
+                  return (
+                    <div className="nav-group" key={item.label}>
+                      <button
+                        type="button"
+                        className={`nav-item ${
+                          isRequestActive ? 'active' : ''
+                        }`}
+                        onClick={() =>
+                          setRequestsExpanded((previous) => !previous)
+                        }
+                        aria-expanded={requestsExpanded}
+                      >
+                        <FontAwesomeIcon
+                          icon={item.icon}
+                          className="nav-icon"
+                        />
 
-                  <span>{item.label}</span>
-                </button>
-              ))}
+                        <span>{item.label}</span>
+
+                        <span className={`nav-chevron ${
+                          requestsExpanded ? 'expanded' : ''
+                        }`}>
+                          ⌄
+                        </span>
+                      </button>
+
+                      {requestsExpanded && (
+                        <div className="nav-submenu">
+                          {item.children.map((child) => (
+                            <button
+                              type="button"
+                              key={child.label}
+                              className={`nav-subitem ${
+                                activePage === child.label ? 'active' : ''
+                              }`}
+                              onClick={() => {
+                                setActivePage(child.label);
+                                closeSidebar();
+                              }}
+                            >
+                              <span className="nav-subitem-indicator" />
+                              <span>{child.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <button
+                    type="button"
+                    key={item.label}
+                    className={`nav-item ${
+                      activePage === item.label ? 'active' : ''
+                    }`}
+                    onClick={() => {
+                      setActivePage(item.label);
+                      closeSidebar();
+                    }}
+                  >
+                    <FontAwesomeIcon
+                      icon={item.icon}
+                      className="nav-icon"
+                    />
+
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </div>
           ))}
         </div>
