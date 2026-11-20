@@ -1,5 +1,5 @@
 import pool from '../config/database.js';
-import { AppError } from '../utils/AppError.js';
+
 
 import { getStudentProfile } from './profileService.js';
 import {
@@ -13,9 +13,7 @@ export const getPublicStudentProfile = async (studentId) => {
     // Sensitive fields will never be included in the response.
     const profile = await getStudentProfile(studentId);
 
-    if (!profile) {
-        throw new AppError('Student profile not found.', 404);
-    }
+    
 
     // Retrieve the student's skills, interests and intentions.
     const [
@@ -100,6 +98,15 @@ export const getPublicStudentProfile = async (studentId) => {
             description: intention.description
         })),
 
-        portfolios: portfoliosResult.rows
+        portfolios: portfoliosResult.rows.map(portfolio => ({
+    title: portfolio.title,
+    description: portfolio.description,
+    evidenceType: portfolio.evidence_type,
+    evidenceUrl: portfolio.evidence_url,
+    repositoryUrl: portfolio.repository_url,
+    liveDemoUrl: portfolio.live_demo_url,
+    createdAt: portfolio.created_at,
+    evidence: portfolio.evidence
+}))
     };
 };

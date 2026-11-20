@@ -65,7 +65,8 @@ export const getStudentProfile = async (userId) => {
             ON i.institution_id = f.institution_id
 
          WHERE u.user_id = $1
-           AND u.role = 'student'`,
+           AND u.role = 'student'
+           AND u.account_status = 'active'`,
 
         [userId]
     );

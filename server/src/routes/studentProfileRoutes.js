@@ -156,6 +156,36 @@ router.get('/me/profile', async (req, res, next) => {
 
 });
 
+// ======================================
+// VIEW ANOTHER STUDENT'S PUBLIC PROFILE
+// ======================================
+
+router.get('/:studentId/profile', async (req, res, next) => {
+    try {
+        const validation = z.string().uuid().safeParse(
+            req.params.studentId
+        );
+
+        if (!validation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid student profile ID.'
+            });
+        }
+
+        const profile = await getPublicStudentProfile(
+            validation.data
+        );
+
+        return res.status(200).json({
+            status: 'success',
+            data: profile
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
 
 // ======================================
 // UPDATE MY PROFILE
