@@ -421,42 +421,9 @@ function Dashboard() {
 }
 
 function StudentWorkspace() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [activePage, setActivePage] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const { user, logout } = useAuth();
-
-  const pageSlugs = {
-    Dashboard: 'dashboard',
-    'My Profile': 'profile',
-    'Find Students': 'find-students',
-    'Discover Groups': 'discover-groups',
-    'My Groups': 'my-groups',
-    Messages: 'messages',
-    'Create Group': 'create-group',
-    'My Tasks': 'my-tasks',
-    Settings: 'settings',
-  };
-
-  const slugPages = Object.fromEntries(
-    Object.entries(pageSlugs).map(([page, slug]) => [slug, page])
-  );
-
-  const activePage =
-    slugPages[searchParams.get('page')] || 'Dashboard';
-
-  const setActivePage = (page) => {
-    if (page === 'Dashboard') {
-      setSearchParams({});
-      return;
-    }
-
-    const slug = pageSlugs[page];
-
-    if (slug) {
-      setSearchParams({ page: slug });
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -488,19 +455,21 @@ function StudentWorkspace() {
           <Dashboard />
         ) : activePage === 'My Profile' ? (
           <ProfilePage />
-          ) : activePage === 'Find Students' ? (
+        ) : activePage === 'Find Students' ? (
           <FindStudentsPage />
-      ) : activePage === 'Discover Groups' ? (
-  <DiscoverGroupsPage />
-) : activePage === 'Create Group' ? (
-  <CreateGroupPage onNavigate={setActivePage} />
-) : activePage === 'My Groups' ? (
-  <MyGroupsPage onNavigate={setActivePage} />
-) : activePage === 'Messages' ? (
-  <MessagesPage />
-) : activePage === 'My Tasks' ? (
-  <TasksPage />
-) : (
+        ) : activePage === 'Discover Groups' ? (
+          <DiscoverGroupsPage />
+        ) : activePage === 'Create Group' ? (
+          <CreateGroupPage onNavigate={setActivePage} />
+        ) : activePage === 'My Groups' ? (
+          <MyGroupsPage onNavigate={setActivePage} />
+        ) : activePage === 'Messages' ? (
+          <MessagesPage />
+        ) : activePage === 'My Tasks' ? (
+          <TasksPage />
+        ) : activePage === 'Portfolio & Skills' ? (
+          <PortfolioPage />
+        ) : (
           <div className="page-placeholder">
             <h1>{activePage}</h1>
             <p>
