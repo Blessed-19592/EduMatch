@@ -35,6 +35,28 @@ export const sendStudentCollaborationRequest = async (
             );
         }
 
+        // Prevent another request if these students have
+        // already accepted a collaboration request.
+        const existingCollaboration = await client.query(
+            `SELECT request_id
+             FROM student_collaboration_requests
+             WHERE request_status = 'accepted'
+               AND (
+                    (sender_id = $1 AND recipient_id = $2)
+                    OR
+                    (sender_id = $2 AND recipient_id = $1)
+               )
+             LIMIT 1`,
+            [senderId, recipientId]
+        );
+
+        if (existingCollaboration.rows.length > 0) {
+            throw new AppError(
+                'You are already connected through an accepted collaboration request.',
+                409
+            );
+        }
+
         const result = await client.query(
             `INSERT INTO student_collaboration_requests (
                 sender_id,

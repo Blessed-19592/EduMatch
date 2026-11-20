@@ -1,5 +1,9 @@
 .collaboration-requests-page {
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 36px 48px;
+  box-sizing: border-box;
 }
 
 .collaboration-requests-heading {
@@ -290,5 +294,61 @@
   .collaboration-requests-error {
     align-items: flex-start;
     flex-wrap: wrap;
+  }
+}
+/* Better page spacing */
+.collaboration-requests-heading {
+  margin-bottom: 36px;
+  padding-bottom: 24px;
+}
+
+.collaboration-request-tabs {
+  margin-bottom: 32px;
+}
+
+.collaboration-requests-results-heading {
+  margin-bottom: 24px;
+}
+
+.collaboration-requests-list {
+  gap: 22px;
+}
+
+.collaboration-request-card {
+  padding: 26px;
+  border-radius: 14px;
+}
+
+.collaboration-request-message {
+  padding: 20px;
+  margin-top: 22px;
+}
+
+.collaboration-request-card-actions {
+  margin-top: 24px;
+}
+
+.collaboration-requests-empty {
+  padding: 48px 24px;
+  border-radius: 14px;
+}
+
+@media (max-width: 768px) {
+  .collaboration-requests-page {
+    padding: 22px 16px 32px;
+  }
+
+  .collaboration-request-card {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .collaboration-requests-page {
+    padding: 18px 12px 28px;
+  }
+
+  .collaboration-requests-heading {
+    margin-bottom: 24px;
   }
 }

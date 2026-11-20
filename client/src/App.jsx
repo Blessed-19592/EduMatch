@@ -13,6 +13,7 @@ import DiscoverGroupsPage from './pages/student/DiscoverGroupsPage';
 import CreateGroupPage from './pages/student/CreateGroupPage';
 import MyGroupsPage from './pages/student/MyGroupsPage';
 import FindStudentsPage from './pages/student/FindStudentsPage';
+import CollaborationRequestsPage from './pages/student/CollaborationRequestsPage';
 import MessagesPage from './pages/student/MessagesPage';
 import TasksPage from './pages/student/TasksPage';
 import PortfolioPage from './pages/student/PortfolioPage';
@@ -57,6 +58,7 @@ const navigation = [
     title: 'COLLABORATION',
     items: [
       { label: 'Find Students', icon: faGlobe },
+      { label: 'Collaboration Requests', icon: faBell },
       { label: 'Discover Groups', icon: faUsers },
       { label: 'My Groups', icon: faFolderOpen },
       { label: 'Messages', icon: faComments },
@@ -457,6 +459,8 @@ function StudentWorkspace() {
           <ProfilePage />
         ) : activePage === 'Find Students' ? (
           <FindStudentsPage />
+        ) : activePage === 'Collaboration Requests' ? (
+          <CollaborationRequestsPage />
         ) : activePage === 'Discover Groups' ? (
           <DiscoverGroupsPage />
         ) : activePage === 'Create Group' ? (

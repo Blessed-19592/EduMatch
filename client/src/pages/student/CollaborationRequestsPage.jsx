@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../api/api';
 import {
   RefreshCw,
   Users,
@@ -16,7 +16,7 @@ import {
 
 import './CollaborationRequestsPage.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 
 function getErrorMessage(error) {
   return (
@@ -173,13 +173,9 @@ export default function CollaborationRequestsPage() {
     setError('');
 
     try {
-      const response = await axios.get(
-        `${API_URL}/api/student-collaboration-requests`,
-        {
-          params: { type: activeTab },
-          withCredentials: true,
-        }
-      );
+      const response = await api.get('/student-collaboration-requests', {
+  params: { type: activeTab },
+});
 
       setRequests(response.data.data || []);
     } catch (err) {
@@ -205,11 +201,10 @@ export default function CollaborationRequestsPage() {
     setError('');
 
     try {
-      await axios.patch(
-        `${API_URL}/api/student-collaboration-requests/${requestId}/respond`,
-        { decision },
-        { withCredentials: true }
-      );
+      await api.patch(
+  `/student-collaboration-requests/${requestId}/respond`,
+  { decision }
+);
 
       await fetchRequests();
     } catch (err) {
@@ -228,11 +223,10 @@ export default function CollaborationRequestsPage() {
     setError('');
 
     try {
-      await axios.patch(
-        `${API_URL}/api/student-collaboration-requests/${requestId}/cancel`,
-        {},
-        { withCredentials: true }
-      );
+      await api.patch(
+  `/student-collaboration-requests/${requestId}/cancel`,
+  {}
+);
 
       await fetchRequests();
     } catch (err) {

@@ -1,6 +1,6 @@
 import './FindStudentsPage.css';
 import { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../api/api';
 import {
   RefreshCw,
   Users,
@@ -15,7 +15,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 
 const YEARS = [1, 2, 3, 4];
 
@@ -41,6 +41,9 @@ function MatchCard({
   feedback,
 }) {
   const isActive = activeRequest === student.studentId;
+useEffect(() => {
+  fetchExistingRequests();
+}, []);
 
   return (
     <article className="content-card find-student-card">
@@ -197,7 +200,7 @@ export default function FindStudentsPage() {
   const [activeRequest, setActiveRequest] = useState(null);
   const [message, setMessage] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
-  const [sentRequests, setSentRequests] = useState(new Set());
+  const [requestStatuses, setRequestStatuses] = useState({});
   const [requestFeedback, setRequestFeedback] = useState({});
 
   const fetchMatches = useCallback(async (years = selectedYears) => {
@@ -211,13 +214,9 @@ export default function FindStudentsPage() {
         params.years = years.join(',');
       }
 
-      const response = await axios.get(
-        `${API_URL}/api/matches/students`,
-        {
-          params,
-          withCredentials: true,
-        }
-      );
+      const response = await api.get('/matches/students', {
+        params,
+      });
 
       setStudents(response.data.matches ?? []);
     } catch (err) {
@@ -278,15 +277,12 @@ export default function FindStudentsPage() {
     setRequestFeedback({});
 
     try {
-      await axios.post(
-        `${API_URL}/api/student-collaboration-requests/${studentId}`,
-        {
-          message: message.trim(),
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      await api.post(
+  `/student-collaboration-requests/${studentId}`,
+  {
+    message: message.trim(),
+  }
+);
 
       setSentRequests((current) => {
         const updated = new Set(current);
@@ -446,4 +442,42 @@ export default function FindStudentsPage() {
       ) : null}
     </section>
   );
+  async function fetchExistingRequests() {
+  try {
+    const [sentResponse, receivedResponse] = await Promise.all([
+      api.get('/student-collaboration-requests', {
+        params: { type: 'sent' },
+      }),
+      api.get('/student-collaboration-requests', {
+        params: { type: 'received' },
+      }),
+    ]);
+
+    const statuses = {};
+
+    const allRequests = [
+      ...(sentResponse.data.data || []),
+      ...(receivedResponse.data.data || []),
+    ];
+
+    allRequests.forEach((request) => {
+      if (
+        ['pending', 'accepted'].includes(request.request_status)
+      ) {
+        const existing = statuses[request.student_id];
+
+        if (
+          !existing ||
+          request.request_status === 'accepted'
+        ) {
+          statuses[request.student_id] = request.request_status;
+        }
+      }
+    });
+
+    setRequestStatuses(statuses);
+  } catch (error) {
+    console.error('Unable to load existing collaboration requests:', error);
+  }
+}
 }
