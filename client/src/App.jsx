@@ -347,9 +347,12 @@ useEffect(() => {
     try {
       const response = await api.get('/groups/my-groups');
 
-      const groupData = response.data.groups ?? response.data;
+      const rows = Array.isArray(response.data?.groups)
+  ? response.data.groups
+  : [];
 
-      setGroups(Array.isArray(groupData) ? groupData : []);
+setGroups(rows);
+
     } catch (error) {
       console.error('Failed to load dashboard groups:', error);
       setGroupsError('Unable to load your groups. Please try again.');
