@@ -20,6 +20,7 @@ import PortfolioPage from './pages/student/PortfolioPage';
 import './components/auth/Auth.css';
 import GroupInvitationsPage from './pages/student/GroupInvitationsPage';
 import MembershipRequestsInboxPage from './pages/student/MembershipRequestsInboxPage';
+import api from './api/api';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -336,7 +337,30 @@ function StatCard({ icon, label, value, description }) {
   );
 }
 
-function Dashboard() {
+function Dashboard({ onNavigate }) {
+  const [groups, setGroups] = useState([]);
+const [groupsLoading, setGroupsLoading] = useState(true);
+const [groupsError, setGroupsError] = useState('');
+
+useEffect(() => {
+  const fetchGroups = async () => {
+    try {
+      const response = await api.get('/groups/my-groups');
+
+      const groupData = response.data.groups ?? response.data;
+
+      setGroups(Array.isArray(groupData) ? groupData : []);
+    } catch (error) {
+      console.error('Failed to load dashboard groups:', error);
+      setGroupsError('Unable to load your groups. Please try again.');
+    } finally {
+      setGroupsLoading(false);
+    }
+  };
+
+  fetchGroups();
+}, []);
+
   return (
     <div className="dashboard">
       <div className="welcome-section">
@@ -353,7 +377,10 @@ function Dashboard() {
           </p>
         </div>
 
-        <button className="primary-button">
+        <button
+  className="primary-button"
+  onClick={() => onNavigate('Create Group')}
+>
           <FontAwesomeIcon icon={faPlus} />
           Create a group
         </button>
@@ -399,7 +426,10 @@ function Dashboard() {
               </p>
             </div>
 
-            <button className="text-button">
+            <button
+  className="text-button"
+  onClick={() => onNavigate('My Groups')}
+>
               View all
               <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
             </button>
@@ -417,7 +447,10 @@ function Dashboard() {
               join groups working towards shared goals.
             </p>
 
-            <button className="secondary-button">
+            <button
+  className="secondary-button"
+  onClick={() => onNavigate('Discover Groups')}
+>
               Explore groups
               <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
             </button>
@@ -483,7 +516,10 @@ function Dashboard() {
             </p>
           </div>
 
-          <button className="primary-button">
+          <button
+  className="primary-button"
+  onClick={() => onNavigate('Find Students')}
+>
             Find collaborators
             <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
           </button>
@@ -530,7 +566,7 @@ function StudentWorkspace() {
 
       <main className="main-area">
     {activePage === 'Dashboard' ? (
-        <Dashboard />
+        <Dashboard onNavigate={setActivePage} />
     ) : activePage === 'My Profile' ? (
         <ProfilePage />
     ) : activePage === 'Find Students' ? (
