@@ -143,8 +143,10 @@ const chatMessagesRef = useRef(null);
       setConnectionStatus('disconnected');
     });
 
-    socket.on('connect_error', () => {
-      setConnectionStatus('disconnected');
+    socket.on('connect_error', (error) => {
+  console.error('Socket connection failed:', error.message);
+  setConnectionStatus('disconnected');
+  setError(error.message);
     });
 
     socket.on('group:new-message', (message) => {

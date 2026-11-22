@@ -472,8 +472,9 @@ function Dashboard({ onNavigate, user }) {
           onClick={() => onNavigate('My Tasks')}
         >
           <span className="stat-label">My tasks</span>
-          <strong>—</strong>
-          <span className="stat-description">View your assigned tasks</span>
+          <strong>
+          {tasksLoading ? '—' : myPendingTasks}
+          </strong>
         </button>
 
         <button

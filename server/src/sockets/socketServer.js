@@ -173,6 +173,16 @@ export const configureSocketServer = (
         }
     });
 
+    io.engine.on('connection_error', (error) => {
+    console.error('SOCKET ENGINE CONNECTION ERROR:', {
+        code: error.code,
+        message: error.message,
+        context: error.context,
+        url: error.req?.url,
+        origin: error.req?.headers?.origin
+    });
+});
+
     // Share Express sessions with Socket.IO.
     io.engine.use(sessionMiddleware);
 

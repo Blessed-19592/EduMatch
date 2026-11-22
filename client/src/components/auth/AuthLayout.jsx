@@ -1,42 +1,53 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGraduationCap, faUsers, faLightbulb, faBookOpen } from '@fortawesome/free-solid-svg-icons';
-import { Link } from 'react-router-dom';
+import authBackground from '../../assets/edumatch-auth-bg.jpg';
 
-export default function AuthLayout({ children, eyebrow = 'STUDENT COLLABORATION', title, subtitle }) {
+export default function AuthLayout({ eyebrow, title, subtitle, children }) {
   return (
-    <main className="auth-page">
-      <section className="auth-visual" aria-label="EduMatch introduction">
-        <Link to="/login" className="auth-brand">
-          <span className="auth-brand-icon"><FontAwesomeIcon icon={faGraduationCap} /></span>
-          <span><strong>EduMatch</strong><small>LEARN. CONNECT. GROW.</small></span>
-        </Link>
-        <div className="auth-visual-content">
-          <span className="auth-kicker">BUILT FOR KISII UNIVERSITY</span>
-          <h1>Better learning<br />happens <em>together.</em></h1>
-          <p>Find the right people, share knowledge and turn your academic goals into meaningful collaborations.</p>
-          <div className="auth-feature-list">
-            <div><FontAwesomeIcon icon={faUsers} /><span>Connect with fellow students</span></div>
-            <div><FontAwesomeIcon icon={faLightbulb} /><span>Discover complementary skills</span></div>
-            <div><FontAwesomeIcon icon={faBookOpen} /><span>Make progress together</span></div>
-          </div>
-        </div>
-        <span className="auth-visual-footer">© 2026 EduMatch · Kisii University</span>
-      </section>
-      <section className="auth-panel">
-        <div className="auth-card-wrap">
-          <div className="auth-mobile-brand">
-            <span className="auth-brand-icon"><FontAwesomeIcon icon={faGraduationCap} /></span>
-            <strong>EduMatch</strong>
-          </div>
-          <div className="auth-heading">
+    <main
+      className="auth-page"
+      style={{ '--auth-background': `url(${authBackground})` }}
+    >
+      <div className="auth-background-overlay" />
+
+      <header className="auth-header">
+  <a href="/login" className="auth-logo">
+    <span>Edu</span><strong>Match</strong>
+  </a>
+
+  <nav className="auth-nav">
+    <span>LEARN. CONNECT. GROW.</span>
+  </nav>
+</header>
+
+      <div className="auth-content">
+        <section className="auth-introduction">
+  <h1>
+    Find your people.
+    <span className="auth-tagline">
+  Build something <span className="auth-meaningful">meaningful.</span>
+</span>
+  </h1>
+
+  <p>
+    Connect with students, share ideas and turn your
+    academic ambitions into achievements.
+  </p>
+</section>
+
+        <section className="auth-card">
+          <div className="auth-card-heading">
             <span>{eyebrow}</span>
             <h2>{title}</h2>
             <p>{subtitle}</p>
           </div>
+
           {children}
-          <p className="auth-legal">By continuing, you agree to use EduMatch responsibly and respectfully.</p>
-        </div>
-      </section>
+        </section>
+      </div>
+
+      <footer className="auth-footer">
+        <span>© {new Date().getFullYear()} EduMatch</span>
+        <span>Built for collaboration. Designed for growth.</span>
+      </footer>
     </main>
   );
 }
