@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useSearchParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -339,200 +339,185 @@ function StatCard({ icon, label, value, description }) {
 
 function Dashboard({ onNavigate }) {
   const [groups, setGroups] = useState([]);
-const [groupsLoading, setGroupsLoading] = useState(true);
-const [groupsError, setGroupsError] = useState('');
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  const [groupsError, setGroupsError] = useState('');
 
-useEffect(() => {
-  const fetchGroups = async () => {
-    try {
-      const response = await api.get('/groups/my-groups');
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const response = await api.get('/groups/my-groups');
 
-      const rows = Array.isArray(response.data?.groups)
-  ? response.data.groups
-  : [];
+        const rows = Array.isArray(response.data?.groups)
+          ? response.data.groups
+          : [];
 
-setGroups(rows);
+        setGroups(rows);
+      } catch (error) {
+        console.error('Failed to load dashboard groups:', error);
+        setGroupsError('Unable to load your groups.');
+      } finally {
+        setGroupsLoading(false);
+      }
+    };
 
-    } catch (error) {
-      console.error('Failed to load dashboard groups:', error);
-      setGroupsError('Unable to load your groups. Please try again.');
-    } finally {
-      setGroupsLoading(false);
-    }
-  };
+    fetchGroups();
+  }, []);
 
-  fetchGroups();
-}, []);
+  const totalGroups = groups.length;
+
+  const pendingRequests = groups.reduce(
+    (total, group) =>
+      total + (group.membership_role === 'owner'
+        ? Number(group.pending_requests || 0)
+        : 0),
+    0
+  );
 
   return (
     <div className="dashboard">
-      <div className="welcome-section">
+
+      <header className="dashboard-header">
         <div>
-          <span className="welcome-label">
-            STUDENT WORKSPACE
-          </span>
-
+          <span className="welcome-label">STUDENT WORKSPACE</span>
           <h1>Welcome to EduMatch</h1>
-
-          <p>
-            Your space to connect, collaborate and achieve more
-            together.
-          </p>
+          <p>Your space to connect, collaborate and achieve more together.</p>
         </div>
 
         <button
-  className="primary-button"
-  onClick={() => onNavigate('Create Group')}
->
+          className="primary-button"
+          onClick={() => onNavigate('Create Group')}
+        >
           <FontAwesomeIcon icon={faPlus} />
-          Create a group
+              Create a group
+          
         </button>
-      </div>
+      </header>
 
-      <div className="dashboard-stats">
-        <StatCard
-          icon={faUsers}
-          value="—"
-          label="My Groups"
-          description="Your active collaborations"
-        />
+      <section className="dashboard-stats">
 
-        <StatCard
-          icon={faWandMagicSparkles}
-          value="—"
-          label="Matches"
-          description="Potential collaborators"
-        />
+        <button
+          className="stat-card"
+          onClick={() => onNavigate('My Groups')}
+        >
+          <span className="stat-label">My groups</span>
+          <strong>{groupsLoading ? '—' : totalGroups}</strong>
+          <span className="stat-description">Groups you're part of</span>
+        </button>
 
-        <StatCard
-          icon={faClipboardCheck}
-          value="—"
-          label="Pending Tasks"
-          description="Tasks awaiting completion"
-        />
+        <button
+          className="stat-card"
+          onClick={() => onNavigate('Membership Requests')}
+        >
+          <span className="stat-label">Pending requests</span>
+          <strong>{groupsLoading ? '—' : pendingRequests}</strong>
+          <span className="stat-description">Requests for groups you own</span>
+        </button>
 
-        <StatCard
-          icon={faComments}
-          value="—"
-          label="Messages"
-          description="Your group conversations"
-        />
-      </div>
+        <button
+          className="stat-card"
+          onClick={() => onNavigate('My Tasks')}
+        >
+          <span className="stat-label">My tasks</span>
+          <strong>—</strong>
+          <span className="stat-description">View your assigned tasks</span>
+        </button>
 
-      <div className="dashboard-grid">
-        <section className="content-card main-card">
-          <div className="card-heading">
-            <div>
-              <h2>My Collaborations</h2>
-              <p>
-                Stay connected with your academic teams.
-              </p>
-            </div>
+        <button
+          className="stat-card"
+          onClick={() => onNavigate('Messages')}
+        >
+          <span className="stat-label">Messages</span>
+          <strong>—</strong>
+          <span className="stat-description">Open group conversations</span>
+        </button>
 
-            <button
-  className="text-button"
-  onClick={() => onNavigate('My Groups')}
->
-              View all
-              <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-            </button>
-          </div>
+      </section>
 
-          <div className="empty-state">
-            <div className="empty-icon">
-              <FontAwesomeIcon icon={faUsers} />
-            </div>
+      <section className="content-card dashboard-groups">
 
-            <h3>Your collaborations start here</h3>
-
-            <p>
-              Discover students with similar interests and
-              join groups working towards shared goals.
-            </p>
-
-            <button
-  className="secondary-button"
-  onClick={() => onNavigate('Discover Groups')}
->
-              Explore groups
-              <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-            </button>
-          </div>
-        </section>
-
-        <section className="content-card activity-card">
-          <div className="card-heading">
-            <div>
-              <h2>Upcoming Tasks</h2>
-              <p>Keep track of your commitments.</p>
-            </div>
-
-            <FontAwesomeIcon
-              icon={faCalendarDays}
-              className="muted-icon"
-            />
-          </div>
-
-          <div className="empty-state compact">
-            <div className="empty-icon">
-              <FontAwesomeIcon icon={faClock} />
-            </div>
-
-            <h3>No upcoming tasks</h3>
-
-            <p>
-              Your assigned group tasks will appear here.
-            </p>
-          </div>
-        </section>
-      </div>
-
-      <section className="content-card recommendations-card">
         <div className="card-heading">
           <div>
-            <h2>Discover Your Next Collaboration</h2>
-
-            <p>
-              Find students whose skills and interests
-              complement yours.
-            </p>
-          </div>
-
-          <div className="recommendation-icon">
-            <FontAwesomeIcon icon={faWandMagicSparkles} />
-          </div>
-        </div>
-
-        <div className="recommendation-content">
-          <div>
-            <span className="recommendation-tag">
-              FIND YOUR TEAM
-            </span>
-
-            <h3>
-              Great things happen when students work together.
-            </h3>
-
-            <p>
-              Explore potential teammates, discover academic
-              groups and bring your ideas to life.
-            </p>
+            <h2>My collaborations</h2>
+            <p>Your active student collaborations.</p>
           </div>
 
           <button
-  className="primary-button"
-  onClick={() => onNavigate('Find Students')}
->
-            Find collaborators
-            <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+            className="text-button"
+            onClick={() => onNavigate('My Groups')}
+          >
+            View all
           </button>
         </div>
+
+        {groupsLoading ? (
+          <p className="dashboard-message">Loading your groups...</p>
+        ) : groupsError ? (
+          <p className="dashboard-message error">{groupsError}</p>
+        ) : groups.length > 0 ? (
+          <div className="dashboard-group-list">
+            {groups.slice(0, 4).map((group) => (
+              <article className="dashboard-group-row" key={group.group_id}>
+                <div className="dashboard-group-info">
+                  <h3>{group.group_name}</h3>
+                  <p>{group.intention_name || 'Collaboration group'}</p>
+                </div>
+
+                <div className="dashboard-group-meta">
+                  <span>
+                    {group.current_members} / {group.max_members} members
+                  </span>
+                  <span className={`dashboard-status ${String(group.group_status).toLowerCase()}`}>
+                    {group.group_status}
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="dashboard-empty">
+            <h3>No collaborations yet</h3>
+            <p>Create a group or discover one that matches your interests.</p>
+
+            <div className="dashboard-empty-actions">
+              <button
+                className="secondary-button"
+                onClick={() => onNavigate('Discover Groups')}
+              >
+                Discover groups
+              </button>
+
+              <button
+                className="text-button"
+                onClick={() => onNavigate('Create Group')}
+              >
+                Create a group
+              </button>
+            </div>
+          </div>
+        )}
+
+      </section>
+
+      <section className="dashboard-discovery">
+        <div>
+          <span>DISCOVER</span>
+          <h2>Find people who share your goals.</h2>
+          <p>Connect with students, explore their skills and find your next collaboration.</p>
+        </div>
+
+        <button
+          className="primary-button"
+          onClick={() => onNavigate('Find Students')}
+        >
+          Find collaborators
+        </button>
       </section>
 
       <footer className="dashboard-footer">
         <span>© 2026 EduMatch</span>
         <span>Built for student collaboration</span>
       </footer>
+
     </div>
   );
 }
@@ -569,7 +554,7 @@ function StudentWorkspace() {
 
       <main className="main-area">
     {activePage === 'Dashboard' ? (
-        <Dashboard onNavigate={setActivePage} />
+        <Dashboard onNavigate={setActivePage} user={user} />
     ) : activePage === 'My Profile' ? (
         <ProfilePage />
     ) : activePage === 'Find Students' ? (
