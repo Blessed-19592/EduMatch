@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import api, { getApiErrorMessage } from '../../api/api';
-import './MembershipRequestsPage.css';
+import './MembershipRequestsInboxPage.css';
 
 const formatDate = (value) => {
     if (!value) return 'Recently';

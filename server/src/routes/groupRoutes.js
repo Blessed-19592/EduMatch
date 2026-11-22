@@ -262,7 +262,7 @@ router.get(
 );
 
 // GET /api/groups/:groupId/eligible-collaborators
-router.get('/:groupId/eligible-collaborators', async (req, res, next) => {
+router.get('/:groupId/eligible-collaborators', requireStudent, async (req, res, next) => {
     try {
         const groupId = uuidSchema.parse(req.params.groupId);
 
@@ -282,7 +282,7 @@ router.get('/:groupId/eligible-collaborators', async (req, res, next) => {
 });
 
 // POST /api/groups/:groupId/invitations
-router.post('/:groupId/invitations', async (req, res, next) => {
+router.post('/:groupId/invitations', requireStudent, async (req, res, next) => {
     try {
         const groupId = uuidSchema.parse(req.params.groupId);
         const { inviteeId, message } = sendInvitationSchema.parse(req.body);

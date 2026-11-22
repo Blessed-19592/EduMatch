@@ -35,20 +35,26 @@
 
 .mr-tabs {
     display: flex;
-    gap: 1.5rem;
+    align-items: center;
+    gap: 2rem;
     margin-bottom: 1.5rem;
     border-bottom: 1px solid #e2e8f0;
 }
 
 .mr-tabs button {
-    padding: .85rem .25rem;
+    position: relative;
+    padding: .85rem .5rem;
     color: #64748b;
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    font-size: .9rem;
+    font-size: .95rem;
     font-weight: 600;
     cursor: pointer;
+    transition: color .2s ease, border-color .2s ease;
+}
+.mr-tabs button:hover {
+    color: #2563eb;
 }
 
 .mr-tabs button.active {
@@ -120,10 +126,10 @@
 }
 
 .mr-card-info h2 {
-    margin: 0 0 .5rem;
+    margin: 0 0 .55rem;
     color: #0f172a;
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 750;
     line-height: 1.4;
 }
 
@@ -134,7 +140,8 @@
 }
 
 .mr-person strong {
-    color: #334155;
+    color: #475569;
+    font-weight: 600;
 }
 
 .mr-status {
