@@ -56,8 +56,8 @@ function MessagesPage() {
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
 
   const socketRef = useRef(null);
-  const selectedGroupRef = useRef(null);
-  const messageEndRef = useRef(null);
+const selectedGroupRef = useRef(null);
+const chatMessagesRef = useRef(null);
 
   // Keep the selected group available to socket event handlers.
   useEffect(() => {
@@ -273,13 +273,17 @@ function MessagesPage() {
     );
   };
 
-  // Scroll to the latest message.
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({
+  // Scroll only the chat messages area to the latest message.
+useEffect(() => {
+  const chatContainer = chatMessagesRef.current;
+
+  if (chatContainer) {
+    chatContainer.scrollTo({
+      top: chatContainer.scrollHeight,
       behavior: 'smooth',
-      block: 'end',
     });
-  }, [messages]);
+  }
+}, [messages]);
 
   const handleBackToGroups = () => {
     setMobileChatOpen(false);
@@ -449,7 +453,7 @@ function MessagesPage() {
               </header>
 
               {/* MESSAGES */}
-              <div className="chat-messages">
+              <div className="chat-messages" ref={chatMessagesRef}>
                 {loadingMessages ? (
                   <div className="chat-state">
                     Loading messages...
@@ -508,7 +512,7 @@ function MessagesPage() {
                   )
                 )}
 
-                <div ref={messageEndRef} />
+                
               </div>
 
               {/* MESSAGE COMPOSER */}
