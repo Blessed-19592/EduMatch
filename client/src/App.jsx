@@ -337,7 +337,9 @@ function StatCard({ icon, label, value, description }) {
   );
 }
 
-function Dashboard({ onNavigate }) {
+function Dashboard({ onNavigate, user }) {
+  const [myPendingTasks, setMyPendingTasks] = useState(0);
+  const [tasksLoading, setTasksLoading] = useState(true);
   const [groups, setGroups] = useState([]);
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupsError, setGroupsError] = useState('');
@@ -362,6 +364,58 @@ function Dashboard({ onNavigate }) {
 
     fetchGroups();
   }, []);
+
+  useEffect(() => {
+  if (groupsLoading) return;
+
+  if (!user?.userId || groups.length === 0) {
+    setMyPendingTasks(0);
+    setTasksLoading(false);
+    return;
+  }
+
+  let active = true;
+
+  const fetchMyTasks = async () => {
+    setTasksLoading(true);
+
+    try {
+      const responses = await Promise.all(
+        groups.map((group) =>
+          api.get(`/groups/${group.group_id}/tasks`)
+        )
+      );
+
+      const allTasks = responses.flatMap((response) =>
+        Array.isArray(response.data?.tasks)
+          ? response.data.tasks
+          : []
+      );
+
+      const unfinishedTasks = allTasks.filter(
+        (task) =>
+          String(task.assigned_to) === String(user.userId) &&
+          task.task_status !== 'completed'
+      );
+
+      if (active) {
+        setMyPendingTasks(unfinishedTasks.length);
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard tasks:', error);
+    } finally {
+      if (active) {
+        setTasksLoading(false);
+      }
+    }
+  };
+
+  fetchMyTasks();
+
+  return () => {
+    active = false;
+  };
+}, [groups, groupsLoading, user?.userId]);
 
   const totalGroups = groups.length;
 
