@@ -182,10 +182,7 @@ export default function MembershipRequestsPage() {
                             >
                                 <div className="mr-card-top">
                                     <div className="mr-card-info">
-                                        <span className="mr-type-label">
-                                            GROUP MEMBERSHIP REQUEST
-                                        </span>
-
+                                        
                                         <h2>{request.group_name}</h2>
 
                                         <p className="mr-person">

@@ -304,7 +304,7 @@ router.post('/:groupId/invitations', async (req, res, next) => {
     }
 });
 // GET /api/groups/requests?type=received|sent
-router.get('/requests', async (req, res, next) => {
+router.get('/requests', requireStudent, async (req, res, next) => {
     try {
         const type = req.query.type || 'received';
 

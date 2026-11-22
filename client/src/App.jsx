@@ -19,6 +19,7 @@ import TasksPage from './pages/student/TasksPage';
 import PortfolioPage from './pages/student/PortfolioPage';
 import './components/auth/Auth.css';
 import GroupInvitationsPage from './pages/student/GroupInvitationsPage';
+import MembershipRequestsInboxPage from './pages/student/MembershipRequestsInboxPage';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -528,37 +529,40 @@ function StudentWorkspace() {
       />
 
       <main className="main-area">
-        {activePage === 'Dashboard' ? (
-          <Dashboard />
-        ) : activePage === 'My Profile' ? (
-          <ProfilePage />
-        ) : activePage === 'Find Students' ? (
-          <FindStudentsPage />
-        ) : activePage === 'Collaboration Requests' ? (
-          <CollaborationRequestsPage />
-          : activePage === 'Group Invitations' ? <GroupInvitationsPage />
-        ) : activePage === 'Discover Groups' ? (
-          <DiscoverGroupsPage />
-        ) : activePage === 'Create Group' ? (
-          <CreateGroupPage onNavigate={setActivePage} />
-        ) : activePage === 'My Groups' ? (
-          <MyGroupsPage onNavigate={setActivePage} />
-        ) : activePage === 'Messages' ? (
-          <MessagesPage />
-        ) : activePage === 'My Tasks' ? (
-          <TasksPage />
-        ) : activePage === 'Portfolio & Skills' ? (
-          <PortfolioPage />
-        ) : (
-          <div className="page-placeholder">
+    {activePage === 'Dashboard' ? (
+        <Dashboard />
+    ) : activePage === 'My Profile' ? (
+        <ProfilePage />
+    ) : activePage === 'Find Students' ? (
+        <FindStudentsPage />
+    ) : activePage === 'Collaboration Requests' ? (
+        <CollaborationRequestsPage />
+    ) : activePage === 'Group Invitations' ? (
+        <GroupInvitationsPage />
+    ) : activePage === 'Membership Requests' ? (
+        <MembershipRequestsInboxPage />
+    ) : activePage === 'Discover Groups' ? (
+        <DiscoverGroupsPage />
+    ) : activePage === 'Create Group' ? (
+        <CreateGroupPage onNavigate={setActivePage} />
+    ) : activePage === 'My Groups' ? (
+        <MyGroupsPage onNavigate={setActivePage} />
+    ) : activePage === 'Messages' ? (
+        <MessagesPage />
+    ) : activePage === 'My Tasks' ? (
+        <TasksPage />
+    ) : activePage === 'Portfolio & Skills' ? (
+        <PortfolioPage />
+    ) : (
+        <div className="page-placeholder">
             <h1>{activePage}</h1>
             <p>
-              This section will be connected to the EduMatch backend
-              as its feature is implemented.
+                This section will be connected to the EduMatch backend
+                as its feature is implemented.
             </p>
-          </div>
-        )}
-      </main>
+        </div>
+    )}
+</main>
     </div>
   );
 }

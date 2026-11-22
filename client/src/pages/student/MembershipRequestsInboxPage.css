@@ -120,10 +120,11 @@
 }
 
 .mr-card-info h2 {
-    margin: 0 0 .45rem;
+    margin: 0 0 .5rem;
     color: #0f172a;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 700;
+    line-height: 1.4;
 }
 
 .mr-person {
@@ -287,6 +288,50 @@
     .mr-card-footer {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .mr-actions button {
+        flex: 1;
+    }
+}
+
+/* Membership request page refinements */
+
+.mr-tabs button {
+    transition: color .2s ease, border-color .2s ease;
+}
+
+.mr-tabs button:hover {
+    color: #2563eb;
+}
+
+.mr-card {
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.mr-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 5px 16px rgba(15, 23, 42, .06);
+}
+
+.mr-accept-button:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.mr-reject-button:hover:not(:disabled) {
+    background: #f1f5f9;
+}
+
+.mr-actions button:focus-visible,
+.mr-tabs button:focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+    .mr-actions {
+        width: 100%;
     }
 
     .mr-actions button {
