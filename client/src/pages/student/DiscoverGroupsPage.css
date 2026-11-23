@@ -48,3 +48,255 @@
         flex-direction: column;
     }
 }
+
+.discover-groups-page {
+    max-width: 1280px;
+    padding: 32px clamp(16px, 3vw, 42px) 48px;
+    color: #111111;
+}
+
+.discover-groups-heading {
+    align-items: flex-start;
+    margin: 0 0 26px;
+}
+
+.discover-groups-heading h1 {
+    margin: 0 0 8px;
+    color: var(--primary);
+    font-size: clamp(28px, 3vw, 34px);
+    font-weight: 400;
+    letter-spacing: -0.3px;
+}
+
+.discover-groups-heading p {
+    color: #111111;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.discover-toolbar {
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.discover-search,
+.discover-scope {
+    min-width: 0;
+    height: 48px;
+    border-color: #d7e0eb;
+    border-radius: 9px;
+    color: var(--primary);
+}
+
+.discover-search input,
+.discover-scope select {
+    color: #111111;
+    font-size: 14px;
+}
+
+.discover-filter-panel {
+    padding: 0 0 20px;
+    border: 0;
+    border-bottom: 1px solid #dfe5ed;
+    border-radius: 0;
+    background: transparent;
+}
+
+.discover-filter-title {
+    color: #111111;
+    font-size: 15px;
+}
+
+.discover-filter-title strong {
+    font-weight: 600;
+}
+
+.discover-filter-title span {
+    color: #111111;
+    font-size: 13px;
+}
+
+.discover-year-options {
+    margin-top: 14px;
+}
+
+.discover-year-options button {
+    min-width: 82px;
+    min-height: 39px;
+    border-color: #d7e0eb;
+    border-radius: 8px;
+    color: #111111;
+    font-size: 13px;
+}
+
+.discover-year-options button.selected {
+    border-color: var(--primary);
+    background: #eaf1fb;
+    color: #111111;
+}
+
+.discover-year-options .discover-clear {
+    min-width: auto;
+    border-color: transparent;
+    color: var(--primary);
+}
+
+.discover-filter-panel small {
+    color: #111111;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.discover-results-line {
+    align-items: center;
+    margin: 22px 1px 14px;
+    color: #111111;
+    font-size: 14px;
+}
+
+.discover-results-line strong {
+    font-weight: 600;
+}
+
+.discover-results-line button {
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid #d7e0eb;
+    border-radius: 8px;
+    background: #fff;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.discover-results-line button:disabled {
+    cursor: wait;
+    opacity: 0.6;
+}
+
+.discover-group-card {
+    padding: 21px;
+    border-color: #e1e7ef;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(25, 45, 70, 0.04);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.discover-group-card:hover {
+    border-color: #c9d6e5;
+    box-shadow: 0 8px 20px rgba(25, 45, 70, 0.08);
+    transform: translateY(-2px);
+}
+
+.discover-intention {
+    background: #edf3fd;
+    color: var(--primary);
+}
+
+.discover-open {
+    background: #bfe9ca;
+    color: #111111;
+}
+
+.discover-group-card h2 {
+    color: #111111;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.discover-card-description,
+.discover-card-meta,
+.discover-card-location,
+.discover-skills span {
+    color: #111111;
+}
+
+.discover-card-meta,
+.discover-card-location {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.discover-skills span {
+    background: #f0f3f7;
+    font-size: 12px;
+}
+
+.discover-card-bottom button {
+    color: var(--primary);
+    font-size: 14px;
+}
+
+.discover-empty,
+.discover-loading {
+    color: #111111;
+}
+
+.discover-empty h2 {
+    color: #111111;
+}
+
+.discover-empty p {
+    color: #111111;
+    font-size: 14px;
+}
+
+.discover-modal h2 {
+    color: var(--primary);
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.discover-modal-byline,
+.discover-modal > p,
+.discover-detail-block p {
+    color: #111111;
+    font-size: 14px;
+}
+
+.discover-detail-block h3 {
+    color: #111111;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.discover-request-status {
+    background: #bfe9ca;
+    color: #111111;
+}
+
+.discover-request-box > button {
+    background: #28694b;
+}
+
+.discover-request-box > button:hover:not(:disabled) {
+    background: #20583f;
+}
+
+@media (max-width: 760px) {
+    .discover-groups-page {
+        padding: 24px 16px 36px;
+    }
+
+    .discover-toolbar {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 420px) {
+    .discover-groups-page {
+        padding: 20px 13px 30px;
+    }
+
+    .discover-groups-heading p {
+        font-size: 14px;
+    }
+
+    .discover-group-card {
+        padding: 17px;
+    }
+
+    .discover-modal {
+        padding: 23px 18px;
+    }
+}

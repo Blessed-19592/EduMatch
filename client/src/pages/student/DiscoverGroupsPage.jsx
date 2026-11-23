@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUsers, faMagnifyingGlass, faFilter, faLocationDot, faUserGroup, faArrowLeft, faPaperPlane, faXmark, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faUsers, faMagnifyingGlass, faLocationDot, faUserGroup, faArrowLeft, faPaperPlane, faXmark, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
 import './DiscoverGroupsPage.css';
 
@@ -82,11 +82,9 @@ export default function DiscoverGroupsPage() {
     <div className="discover-groups-page">
       <div className="discover-groups-heading">
         <div>
-          <span className="discover-eyebrow">FIND YOUR TEAM</span>
           <h1>Discover Groups</h1>
           <p>Explore student groups that match what you want to learn or build.</p>
         </div>
-        <div className="discover-heading-icon"><FontAwesomeIcon icon={faUsers} /></div>
       </div>
 
       <div className="discover-toolbar">
@@ -95,7 +93,7 @@ export default function DiscoverGroupsPage() {
       </div>
 
       <section className="discover-filter-panel">
-        <div className="discover-filter-title"><FontAwesomeIcon icon={faFilter} /><strong>Members' year of study</strong><span>Optional</span></div>
+        <div className="discover-filter-title"><strong>Members' year of study</strong><span>Optional</span></div>
         <div className="discover-year-options">{YEARS.map((year) => <button key={year} type="button" className={memberYears.includes(year) ? 'selected' : ''} onClick={() => toggleYear(year)} aria-pressed={memberYears.includes(year)}>Year {year}</button>)}
           {memberYears.length > 0 && <button className="discover-clear" type="button" onClick={() => setMemberYears([])}>Clear</button>}
         </div>
