@@ -302,13 +302,8 @@ function TasksPage() {
     <div className="tasks-page">
       <header className="tasks-heading">
         <div>
-          <span className="tasks-eyebrow">GROUP COLLABORATION</span>
           <h1>Tasks &amp; Progress</h1>
           <p>Organise group responsibilities and track completed work.</p>
-        </div>
-
-        <div className="tasks-heading-icon">
-          <FontAwesomeIcon icon={faClipboardList} />
         </div>
       </header>
 
@@ -362,10 +357,8 @@ function TasksPage() {
               disabled={loadingTasks}
               aria-label="Refresh tasks"
             >
-              <FontAwesomeIcon
-                icon={faRefresh}
-                spin={loadingTasks}
-              />
+              <FontAwesomeIcon icon={faRefresh} spin={loadingTasks} />
+              <span>Refresh</span>
             </button>
           </section>
 
