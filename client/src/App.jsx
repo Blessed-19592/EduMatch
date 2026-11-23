@@ -34,6 +34,7 @@ import GroupInvitationsPage from './pages/student/GroupInvitationsPage';
 import MembershipRequestsInboxPage from './pages/student/MembershipRequestsInboxPage';
 import NotificationCenter from './components/NotificationCenter';
 import ImageAvatar from './components/ImageAvatar';
+import PlatformGuideDialog from './components/PlatformGuideDialog';
 import api, { getApiErrorMessage } from './api/api';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -120,13 +121,11 @@ function Topbar({
     <header className="topbar">
       <div className="topbar-left">
         <a className="brand" href="/" aria-label="EduMatch home">
-          <div className="brand-icon">
-            <FontAwesomeIcon icon={faGraduationCap} />
-          </div>
-
           <div className="brand-text">
-            <h2>EduMatch</h2>
-            <span>LEARN. CONNECT. GROW.</span>
+            <h2>
+              <span className="brand-edu">Edu</span>
+              <span className="brand-match">Match</span>
+            </h2>
           </div>
         </a>
 
@@ -207,7 +206,13 @@ function Topbar({
   );
 }
 
-function Sidebar({ activePage, setActivePage, open, closeSidebar }) {
+function Sidebar({
+  activePage,
+  setActivePage,
+  open,
+  closeSidebar,
+  onOpenGuide
+}) {
   const requestPages = [
     'Collaboration Requests',
     'Group Invitations',
@@ -310,7 +315,15 @@ function Sidebar({ activePage, setActivePage, open, closeSidebar }) {
         </div>
 
         <div className="sidebar-bottom">
-          <div className="sidebar-help">
+          <button
+            type="button"
+            className="sidebar-help"
+            onClick={() => {
+              closeSidebar();
+              onOpenGuide();
+            }}
+            aria-label="Need some help? Explore the platform"
+          >
             <div className="help-icon">
               <FontAwesomeIcon icon={faBookOpen} />
             </div>
@@ -324,7 +337,7 @@ function Sidebar({ activePage, setActivePage, open, closeSidebar }) {
               icon={faArrowUpRightFromSquare}
               className="help-arrow"
             />
-          </div>
+          </button>
 
           <div className="sidebar-footer">
             <FontAwesomeIcon icon={faGraduationCap} />
@@ -616,6 +629,7 @@ function StudentWorkspace() {
   const publicStudentId = publicProfileMatch?.params.studentId;
   const [activePage, setActivePage] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsError, setSettingsError] = useState('');
@@ -719,6 +733,7 @@ function StudentWorkspace() {
         setActivePage={setActivePage}
         open={sidebarOpen}
         closeSidebar={() => setSidebarOpen(false)}
+        onOpenGuide={() => setGuideOpen(true)}
       />
 
       <main className="main-area">
@@ -773,6 +788,15 @@ function StudentWorkspace() {
         </div>
     )}
 </main>
+      {guideOpen && (
+        <PlatformGuideDialog
+          onClose={() => setGuideOpen(false)}
+          onNavigate={(page) => {
+            setActivePage(page);
+            setGuideOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

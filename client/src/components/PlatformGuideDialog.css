@@ -1,0 +1,261 @@
+.platform-guide-dialog {
+  width: min(660px, calc(100vw - 32px));
+  max-width: 660px;
+  max-height: min(760px, calc(100dvh - 32px));
+  padding: 0;
+  overflow: auto;
+  border: 0;
+  border-radius: 18px;
+  background: #fff;
+  color: #172335;
+  box-shadow: 0 24px 80px rgb(10 25 48 / 28%);
+}
+
+.platform-guide-dialog::backdrop {
+  background: rgb(12 23 40 / 58%);
+  backdrop-filter: blur(3px);
+}
+
+.platform-guide-content {
+  padding: 26px 30px 24px;
+}
+
+.platform-guide-header,
+.platform-guide-brand,
+.platform-guide-progress-label,
+.platform-guide-footer,
+.platform-guide-destinations {
+  display: flex;
+  align-items: center;
+}
+
+.platform-guide-header {
+  justify-content: space-between;
+}
+
+.platform-guide-brand {
+  gap: 9px;
+  color: #3976bd;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+}
+
+.platform-guide-brand-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: #edf4fc;
+  color: #2869aa;
+}
+
+.platform-guide-close {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f4f8;
+  color: #4a5a6e;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.platform-guide-intro {
+  margin: 20px 0 22px;
+}
+
+.platform-guide-intro > p {
+  margin: 0 0 6px;
+  color: #3976bd;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.platform-guide-intro h2 {
+  margin: 0 0 8px;
+  color: #22334a;
+  font-size: clamp(24px, 4vw, 30px);
+}
+
+.platform-guide-intro > span {
+  display: block;
+  max-width: 560px;
+  color: #627186;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.platform-guide-progress {
+  margin-bottom: 20px;
+}
+
+.platform-guide-progress-label {
+  justify-content: space-between;
+  margin-bottom: 7px;
+  color: #657386;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.platform-guide-progress-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8edf3;
+}
+
+.platform-guide-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2b6dad;
+  transition: width 180ms ease;
+}
+
+.platform-guide-step {
+  display: flex;
+  gap: 16px;
+  min-height: 210px;
+  padding: 20px;
+  border: 1px solid #e3eaf2;
+  border-radius: 14px;
+  background: #f9fbfd;
+}
+
+.platform-guide-step-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border-radius: 13px;
+  background: #eaf2fc;
+  color: #2869aa;
+}
+
+.platform-guide-step-copy {
+  min-width: 0;
+}
+
+.platform-guide-step-copy h3 {
+  margin: 2px 0 7px;
+  color: #293a50;
+  font-size: 17px;
+}
+
+.platform-guide-step-copy p {
+  margin: 0;
+  color: #627186;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.platform-guide-step-copy ul {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: #40546b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.platform-guide-destinations {
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 14px 0 20px;
+}
+
+.platform-guide-open-button,
+.platform-guide-back-button,
+.platform-guide-next-button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid #2869aa;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.platform-guide-open-button,
+.platform-guide-next-button {
+  background: #2869aa;
+  color: #fff;
+}
+
+.platform-guide-open-button:hover,
+.platform-guide-next-button:hover:not(:disabled) {
+  background: #1d568f;
+}
+
+.platform-guide-back-button {
+  border-color: #d7e0ea;
+  background: #fff;
+  color: #48596e;
+}
+
+.platform-guide-back-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.platform-guide-footer {
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e7edf4;
+}
+
+.platform-guide-footer > span {
+  flex: 1;
+  color: #7a8796;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.platform-guide-open-button:focus-visible,
+.platform-guide-back-button:focus-visible,
+.platform-guide-next-button:focus-visible,
+.platform-guide-close:focus-visible {
+  outline: 3px solid #8cb6e6;
+  outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .platform-guide-content {
+    padding: 20px 17px 17px;
+  }
+
+  .platform-guide-step {
+    gap: 12px;
+    min-height: 0;
+    padding: 15px;
+  }
+
+  .platform-guide-step-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .platform-guide-footer {
+    flex-wrap: wrap;
+  }
+
+  .platform-guide-footer > span {
+    order: 3;
+    flex-basis: 100%;
+  }
+}

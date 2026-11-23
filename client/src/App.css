@@ -48,47 +48,30 @@
 
   display: flex;
   align-items: center;
-  gap: 12px;
 
   padding: 0 23px;
 
   background: #ffffff;
 }
 
-.brand-icon {
-  width: 43px;
-  height: 43px;
-  flex-shrink: 0;
-
-  border-radius: 10px;
-  background: #eaf1fc;
-  color: var(--primary);
-
-  display: grid;
-  place-items: center;
-  font-size: 25px;
-}
-
 .brand-text {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
 }
 
 .brand-text h2 {
   font-size: 25px;
   line-height: 1;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
-  color: var(--primary);
   letter-spacing: -0.7px;
 }
 
-.brand-text span {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.15px;
-  color: var(--text-secondary);
+.brand-edu {
+  color: #111111;
+}
+
+.brand-match {
+  color: #28694b;
 }
 
 .breadcrumb {
@@ -434,14 +417,34 @@
 
 .sidebar-help {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 11px;
 
   padding: 13px 11px;
+  border: 0;
   border-radius: 7px;
 
   background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   margin-bottom: 19px;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.sidebar-help:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-help:active {
+  transform: translateY(1px);
+}
+
+.sidebar-help:focus-visible {
+  outline: 3px solid #d6e8ff;
+  outline-offset: 3px;
 }
 
 .help-icon {
@@ -893,30 +896,19 @@
   .brand {
     width: auto;
     padding: 0;
-    gap: 9px;
-  }
-
-  .brand-icon {
-    width: 37px;
-    height: 37px;
-    font-size: 21px;
+    gap: 0;
   }
 
   .brand-text h2 {
     font-size: 21px;
   }
 
-  .brand-text span {
-    font-size: 8px;
-  }
-
   .topbar-left {
-    gap: 13px;
+    gap: 8px;
   }
 
   .menu-button {
     display: grid;
-    order: 2;
 
     width: 36px;
     height: 36px;
@@ -1038,11 +1030,6 @@
 @media (max-width: 380px) {
   .brand-text h2 {
     font-size: 19px;
-  }
-
-  .brand-icon {
-    width: 34px;
-    height: 34px;
   }
 
   .topbar-left {
