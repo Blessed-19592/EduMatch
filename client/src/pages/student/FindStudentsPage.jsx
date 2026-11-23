@@ -7,7 +7,6 @@ import {
   GraduationCap,
   Building2,
   Sparkles,
-  Filter,
   UserRound,
   AlertCircle,
   Send,
@@ -197,7 +196,6 @@ export default function FindStudentsPage() {
   const [selectedYears, setSelectedYears] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
 
   const [activeRequest, setActiveRequest] = useState(null);
   const [message, setMessage] = useState('');
@@ -269,7 +267,6 @@ export default function FindStudentsPage() {
       setStudents([]);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [selectedYears]);
 
@@ -292,12 +289,6 @@ export default function FindStudentsPage() {
 
   function clearFilters() {
     setSelectedYears([]);
-  }
-
-  function refreshMatches() {
-    setRefreshing(true);
-    fetchMatches(selectedYears);
-    fetchExistingRequests();
   }
 
   function openRequestForm(studentId) {
@@ -355,36 +346,19 @@ export default function FindStudentsPage() {
     <section className="find-students-page">
       <div className="find-students-heading">
         <div>
-          <span className="page-eyebrow">COLLABORATION DISCOVERY</span>
           <h1>Find Students</h1>
           <p>
             Discover students whose skills, interests and collaboration
             goals complement yours.
           </p>
         </div>
-
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={refreshMatches}
-          disabled={loading}
-        >
-          <RefreshCw
-            size={16}
-            className={refreshing ? 'find-students-spinning' : ''}
-          />
-          Refresh
-        </button>
       </div>
 
-      <div className="content-card find-students-filter">
+      <div className="find-students-filter">
         <div className="find-students-filter-heading">
           <div>
-            <h2>
-              <Filter size={18} />
-              Academic year
-            </h2>
-            <p>Choose which students you want to discover.</p>
+            <h2>Academic year</h2>
+            <p>Choose years to update your recommendations automatically.</p>
           </div>
 
           {selectedYears.length > 0 && (

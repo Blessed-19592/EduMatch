@@ -338,6 +338,150 @@
   resize: vertical;
 }
 
+.find-students-page {
+  color: #111111;
+}
+
+.find-students-heading h1 {
+  color: var(--primary);
+  font-size: clamp(28px, 3vw, 34px);
+  letter-spacing: -0.5px;
+}
+
+.find-students-heading p,
+.find-students-filter p,
+.find-students-results-heading p,
+.find-student-identity span,
+.match-score span,
+.find-student-academics p,
+.match-reasons ul,
+.find-students-empty p {
+  color: #111111;
+}
+
+.find-students-filter {
+  padding: 0 0 22px;
+  margin-bottom: 27px;
+  border: 0;
+  border-bottom: 1px solid #dfe5ed;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.find-students-filter-heading {
+  align-items: flex-start;
+}
+
+.find-students-filter-heading h2 {
+  margin: 0 0 6px;
+  color: #111111;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.find-students-filter-heading p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.find-students-year-options {
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.year-filter-button {
+  min-width: 88px;
+  min-height: 42px;
+  padding: 9px 16px;
+  border-color: #d6dee8;
+  border-radius: 8px;
+  color: #111111;
+  font-size: 14px;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.year-filter-button:hover,
+.year-filter-button.selected {
+  border-color: var(--primary);
+  background: #eaf1fb;
+  color: #111111;
+}
+
+.year-filter-button:focus-visible {
+  outline: 3px solid rgba(65, 110, 181, 0.22);
+  outline-offset: 2px;
+}
+
+.filter-hint {
+  margin-top: 12px !important;
+  color: #111111 !important;
+  font-size: 13px;
+}
+
+.find-students-results-heading h2 {
+  color: #111111;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.find-students-count {
+  border: 1px solid #9ed5ad;
+  background: #bfe9ca;
+  color: #111111;
+  font-size: 14px;
+}
+
+.find-students-grid {
+  gap: 18px;
+}
+
+.find-student-card {
+  border-color: #e1e7ef;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(25, 45, 70, 0.04);
+}
+
+.find-student-identity h3,
+.match-reasons h4,
+.find-students-empty h3 {
+  color: #111111;
+}
+
+.match-score strong {
+  color: #111111;
+}
+
+.find-student-academics svg {
+  color: var(--primary);
+}
+
+.match-reasons h4 svg {
+  color: var(--primary);
+}
+
+@media (max-width: 760px) {
+  .find-students-filter {
+    padding-bottom: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .find-students-filter-heading {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .find-students-year-options {
+    gap: 8px;
+  }
+
+  .year-filter-button {
+    flex: 1 1 calc(50% - 8px);
+  }
+}
+
 .collaboration-request-form textarea:focus {
   outline: 2px solid var(--primary-color, #2563eb);
   outline-offset: 1px;
