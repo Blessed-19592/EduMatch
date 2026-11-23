@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faUserGraduate, faBookOpen, faCode, faHeart, faPeopleGroup,
-  faSliders, faMagnifyingGlass, faCheck, faCircleInfo, faLock,
-  faSpinner, faFloppyDisk, faArrowRight, faGraduationCap,
-} from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
 import './ProfilePage.css';
 
 const AVAILABILITY = ['Weekdays', 'Weekends', 'Evenings', 'Flexible'];
+const SKILLS_PREVIEW_LIMIT = 6;
+const INTERESTS_PREVIEW_LIMIT = 8;
 const INTENTION_ORDER = [
   'STUDY_GROUP', 'PEER_LEARNING', 'COURSEWORK', 'PERSONAL_PROJECTS', 'ADVANCED_PROJECTS',
 ];
@@ -37,12 +33,10 @@ const getArray = (payload, key) => {
 };
 const pick = (object, camel, snake, fallback = '') => object?.[camel] ?? object?.[snake] ?? fallback;
 
-function SectionHeading({ icon, eyebrow, title, description }) {
+function SectionHeading({ title, description }) {
   return (
     <div className="profile-section-heading">
-      <div className="profile-section-icon"><FontAwesomeIcon icon={icon} /></div>
       <div>
-        <span>{eyebrow}</span>
         <h2>{title}</h2>
         {description && <p>{description}</p>}
       </div>
@@ -71,7 +65,6 @@ function ChoiceChips({ options, value, onChange, multiple = false, disabled = fa
           disabled={disabled}
           aria-pressed={selected.includes(option)}
         >
-          {selected.includes(option) && <FontAwesomeIcon icon={faCheck} />}
           {option}
         </button>
       ))}
@@ -90,6 +83,8 @@ export default function ProfilePage() {
   const [intentionsCatalog, setIntentionsCatalog] = useState([]);
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
+  const [skillsExpanded, setSkillsExpanded] = useState(false);
+  const [interestsExpanded, setInterestsExpanded] = useState(false);
   const [selectedIntentions, setSelectedIntentions] = useState([]);
   const [preferences, setPreferences] = useState(EMPTY_PREFERENCES);
   const [skillSearch, setSkillSearch] = useState('');
@@ -165,6 +160,12 @@ export default function ProfilePage() {
     `${item.skill_name} ${item.category}`.toLowerCase().includes(skillSearch.toLowerCase())), [skillsCatalog, skillSearch]);
   const visibleInterests = useMemo(() => interestCatalog.filter((item) =>
     `${item.interest_name} ${item.interest_category}`.toLowerCase().includes(interestSearch.toLowerCase())), [interestCatalog, interestSearch]);
+  const displayedSkills = skillsExpanded
+    ? visibleSkills
+    : visibleSkills.slice(0, SKILLS_PREVIEW_LIMIT);
+  const displayedInterests = interestsExpanded
+    ? visibleInterests
+    : visibleInterests.slice(0, INTERESTS_PREVIEW_LIMIT);
 
   const saveSection = async (section, request, successMessage) => {
     setSaving(section); setError(''); setNotice('');
@@ -187,7 +188,7 @@ export default function ProfilePage() {
   };
   const updateSkillLevel = (skillId, proficiencyLevel) => setSelectedSkills((current) => current.map((item) => item.skillId === skillId ? { ...item, proficiencyLevel } : item));
 
-  if (loading) return <div className="profile-loading"><FontAwesomeIcon icon={faSpinner} spin /><span>Loading your profile…</span></div>;
+  if (loading) return <div className="profile-loading"><span>Loading your profile…</span></div>;
 
   if (!profile && error) return (
     <div className="profile-page"><div className="profile-alert error">{error}<button type="button" onClick={loadProfile}>Retry</button></div></div>
@@ -197,7 +198,6 @@ export default function ProfilePage() {
     <div className="profile-page">
       <div className="profile-page-header">
         <div>
-          <span className="profile-eyebrow">YOUR STUDENT IDENTITY</span>
           <h1>My Profile</h1>
           <p>Tell other students what you know, what interests you and how you like to collaborate.</p>
         </div>
@@ -207,11 +207,11 @@ export default function ProfilePage() {
       </div>
 
       {error && <div className="profile-alert error" role="alert">{error}</div>}
-      {notice && <div className="profile-alert success" role="status"><FontAwesomeIcon icon={faCheck} />{notice}</div>}
-      {locked && <div className="profile-lock-notice"><FontAwesomeIcon icon={faLock} /><div><strong>Your profile is under review</strong><p>You can view your information, but editing is temporarily disabled until the review is complete.</p></div></div>}
+      {notice && <div className="profile-alert success" role="status">{notice}</div>}
+      {locked && <div className="profile-lock-notice"><div><strong>Your profile is under review</strong><p>You can view your information, but editing is temporarily disabled until the review is complete.</p></div></div>}
 
       <section className="profile-card">
-        <SectionHeading icon={faUserGraduate} eyebrow="ABOUT YOU" title="Personal & academic information" description="Your academic identity comes from the university student registry." />
+        <SectionHeading title="Personal & academic information" description="Your academic identity comes from the university student registry." />
         <div className="profile-identity-grid">
           <ReadOnlyField label="Full name" value={profile?.full_name} />
           <ReadOnlyField label="Registration number" value={profile?.registration_number} />
@@ -227,76 +227,78 @@ export default function ProfilePage() {
           <textarea id="profile-bio" rows="4" maxLength="1000" value={form.bio} disabled={locked} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Introduce yourself, your academic interests or what you enjoy learning…" />
           <small>{form.bio.length}/1000 characters</small>
         </div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" disabled={locked || !!saving} onClick={() => saveSection('profile', () => api.patch('/students/me/profile', { bio: form.bio || null }), 'Personal information saved.')}>{saving === 'profile' ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faFloppyDisk} />} Save personal information</button></div>
+        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'profile'} disabled={locked || !!saving} onClick={() => saveSection('profile', () => api.patch('/students/me/profile', { bio: form.bio || null }), 'Personal information saved.')}>{saving === 'profile' ? 'Saving…' : 'Save personal information'}</button></div>
       </section>
 
       <section className="profile-card">
-        <SectionHeading icon={faCode} eyebrow="YOUR CAPABILITIES" title="Skills & proficiency" description="Choose skills you can contribute and indicate your current proficiency." />
-        <div className="profile-search"><FontAwesomeIcon icon={faMagnifyingGlass} /><input value={skillSearch} onChange={(e) => setSkillSearch(e.target.value)} placeholder="Search skills…" aria-label="Search skills" /></div>
-        <div className="profile-catalog-list">
-          {visibleSkills.map((skill) => {
+        <SectionHeading title="Skills & proficiency" description="Choose skills you can contribute and indicate your current proficiency." />
+        <div className="profile-search"><input value={skillSearch} onChange={(e) => setSkillSearch(e.target.value)} placeholder="Search skills…" aria-label="Search skills" /></div>
+        <div className="profile-catalog-list" id="profile-skills-list">
+          {displayedSkills.map((skill) => {
             const chosen = selectedSkills.find((item) => item.skillId === skill.skill_id);
             return <div className={`profile-catalog-row ${chosen ? 'chosen' : ''}`} key={skill.skill_id}>
-              <button type="button" className="profile-catalog-select" disabled={locked} onClick={() => toggleSkill(skill)}><span className="profile-checkbox">{chosen && <FontAwesomeIcon icon={faCheck} />}</span><span><strong>{skill.skill_name}</strong><small>{skill.category}</small></span></button>
+              <button type="button" className="profile-catalog-select" disabled={locked} onClick={() => toggleSkill(skill)}><span className="profile-checkbox" aria-hidden="true" /><span><strong>{skill.skill_name}</strong><small>{skill.category}</small></span></button>
               {chosen && <select aria-label={`Proficiency in ${skill.skill_name}`} disabled={locked} value={chosen.proficiencyLevel} onChange={(e) => updateSkillLevel(skill.skill_id, e.target.value)}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select>}
             </div>;
           })}
           {visibleSkills.length === 0 && <p className="profile-empty-hint">No matching skills found in the catalogue.</p>}
         </div>
+        {visibleSkills.length > SKILLS_PREVIEW_LIMIT && <button type="button" className="profile-expand-button" aria-expanded={skillsExpanded} aria-controls="profile-skills-list" onClick={() => setSkillsExpanded((expanded) => !expanded)}>{skillsExpanded ? 'Show less' : `Show ${visibleSkills.length - SKILLS_PREVIEW_LIMIT} more skills`}</button>}
         <div className="profile-selection-summary">{selectedSkills.length} skill{selectedSkills.length === 1 ? '' : 's'} selected · Up to 50</div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" disabled={locked || !!saving || selectedSkills.length > 50} onClick={() => saveSection('skills', () => api.put('/me/skills', { skills: selectedSkills.map(({ skillId, proficiencyLevel }) => ({ skillId, proficiencyLevel })) }), 'Skills and proficiency saved.')}>{saving === 'skills' ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faFloppyDisk} />} Save skills</button></div>
+        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'skills'} disabled={locked || !!saving || selectedSkills.length > 50} onClick={() => saveSection('skills', () => api.put('/me/skills', { skills: selectedSkills.map(({ skillId, proficiencyLevel }) => ({ skillId, proficiencyLevel })) }), 'Skills and proficiency saved.')}>{saving === 'skills' ? 'Saving…' : 'Save skills'}</button></div>
       </section>
 
       <section className="profile-card">
-        <SectionHeading icon={faHeart} eyebrow="WHAT YOU ENJOY" title="Interests" description="Select subjects and activities you would enjoy exploring with other students." />
-        <div className="profile-search"><FontAwesomeIcon icon={faMagnifyingGlass} /><input value={interestSearch} onChange={(e) => setInterestSearch(e.target.value)} placeholder="Search interests…" aria-label="Search interests" /></div>
-        <div className="profile-tag-grid">
-          {visibleInterests.map((interest) => {
+        <SectionHeading title="Interests" description="Select subjects and activities you would enjoy exploring with other students." />
+        <div className="profile-search"><input value={interestSearch} onChange={(e) => setInterestSearch(e.target.value)} placeholder="Search interests…" aria-label="Search interests" /></div>
+        <div className="profile-tag-grid" id="profile-interests-list">
+          {displayedInterests.map((interest) => {
             const chosen = selectedInterests.includes(interest.interest_id);
-            return <button type="button" key={interest.interest_id} disabled={locked} className={`profile-tag ${chosen ? 'selected' : ''}`} onClick={() => setSelectedInterests((current) => chosen ? current.filter((id) => id !== interest.interest_id) : [...current, interest.interest_id])}>{chosen && <FontAwesomeIcon icon={faCheck} />}{interest.interest_name}<small>{interest.interest_category}</small></button>;
+            return <button type="button" key={interest.interest_id} disabled={locked} className={`profile-tag ${chosen ? 'selected' : ''}`} onClick={() => setSelectedInterests((current) => chosen ? current.filter((id) => id !== interest.interest_id) : [...current, interest.interest_id])}>{interest.interest_name}<small>{interest.interest_category}</small></button>;
           })}
         </div>
+        {visibleInterests.length > INTERESTS_PREVIEW_LIMIT && <button type="button" className="profile-expand-button" aria-expanded={interestsExpanded} aria-controls="profile-interests-list" onClick={() => setInterestsExpanded((expanded) => !expanded)}>{interestsExpanded ? 'Show less' : `Show ${visibleInterests.length - INTERESTS_PREVIEW_LIMIT} more interests`}</button>}
         <div className="profile-selection-summary">{selectedInterests.length} selected · Up to 30</div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" disabled={locked || !!saving || selectedInterests.length > 30} onClick={() => saveSection('interests', () => api.put('/me/interests', { interestIds: selectedInterests }), 'Interests saved.')}>{saving === 'interests' ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faFloppyDisk} />} Save interests</button></div>
+        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'interests'} disabled={locked || !!saving || selectedInterests.length > 30} onClick={() => saveSection('interests', () => api.put('/me/interests', { interestIds: selectedInterests }), 'Interests saved.')}>{saving === 'interests' ? 'Saving…' : 'Save interests'}</button></div>
       </section>
 
       <section className="profile-card">
-        <SectionHeading icon={faPeopleGroup} eyebrow="HOW YOU COLLABORATE" title="Collaboration intentions" description="Choose one or more reasons you want to connect with other students." />
+        <SectionHeading title="Collaboration intentions" description="Choose one or more reasons you want to connect with other students." />
         <div className="profile-intention-grid">
           {intentionsCatalog.map((item) => {
             const chosen = selectedIntentions.includes(item.intention_id);
             return <button type="button" key={item.intention_id} disabled={locked} className={`profile-intention ${chosen ? 'selected' : ''}`} onClick={() => setSelectedIntentions((current) => chosen ? current.filter((id) => id !== item.intention_id) : current.length < 5 ? [...current, item.intention_id] : current)}>
-              <span className="profile-intention-check">{chosen && <FontAwesomeIcon icon={faCheck} />}</span><strong>{item.intention_name}</strong><p>{INTENTION_DESCRIPTIONS[item.intention_code] || item.description}</p>
+              <span className="profile-intention-check" aria-hidden="true" /><strong>{item.intention_name}</strong><p>{INTENTION_DESCRIPTIONS[item.intention_code] || item.description}</p>
             </button>;
           })}
         </div>
         <div className="profile-selection-summary">{selectedIntentions.length} of 5 intentions selected</div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" disabled={locked || !!saving || selectedIntentions.length > 5} onClick={() => saveSection('intentions', () => api.put('/me/intentions', { intentionIds: selectedIntentions }), 'Collaboration intentions saved.')}>{saving === 'intentions' ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faFloppyDisk} />} Save intentions</button></div>
+        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'intentions'} disabled={locked || !!saving || selectedIntentions.length > 5} onClick={() => saveSection('intentions', () => api.put('/me/intentions', { intentionIds: selectedIntentions }), 'Collaboration intentions saved.')}>{saving === 'intentions' ? 'Saving…' : 'Save intentions'}</button></div>
       </section>
 
       <section className="profile-card">
-        <SectionHeading icon={faSliders} eyebrow="YOUR TEAM PREFERENCES" title="Collaboration preferences" description="Set a few simple preferences for the kind of teamwork that suits you." />
+        <SectionHeading title="Collaboration preferences" description="Set a few simple preferences for the kind of teamwork that suits you." />
         <div className="profile-form-grid">
           <div className="profile-field"><label>Collaboration status</label><select disabled={locked} value={form.collaborationStatus} onChange={(e) => setForm({ ...form, collaborationStatus: e.target.value })}><option value="available">Available to collaborate</option><option value="currently_collaborating">Currently collaborating</option><option value="unavailable">Not available right now</option></select></div>
           <div className="profile-field"><label>Preferred meeting mode</label><select disabled={locked} value={form.preferredMeetingMode} onChange={(e) => setForm({ ...form, preferredMeetingMode: e.target.value })}><option value="any">No preference</option><option value="remote">Remote</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></div>
           <div className="profile-field"><label>Commitment level</label><select disabled={locked} value={form.commitmentLevel} onChange={(e) => setForm({ ...form, commitmentLevel: e.target.value })}><option value="flexible">Flexible</option><option value="moderate">Moderate</option><option value="high">High</option></select></div>
         </div>
         <div className="profile-field profile-availability"><label>When are you generally available?</label><p>Choose all that apply. Keep it simple — you can update this later.</p><ChoiceChips options={AVAILABILITY} value={form.preferredMeetingTimes} onChange={(value) => setForm({ ...form, preferredMeetingTimes: value })} multiple disabled={locked} /></div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" disabled={locked || !!saving} onClick={() => saveSection('preferences', () => api.patch('/students/me/profile', { collaborationStatus: form.collaborationStatus, preferredMeetingMode: form.preferredMeetingMode, preferredMeetingTimes: form.preferredMeetingTimes, commitmentLevel: form.commitmentLevel }), 'Collaboration preferences saved.')}>{saving === 'preferences' ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faFloppyDisk} />} Save collaboration preferences</button></div>
+        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'preferences'} disabled={locked || !!saving} onClick={() => saveSection('preferences', () => api.patch('/students/me/profile', { collaborationStatus: form.collaborationStatus, preferredMeetingMode: form.preferredMeetingMode, preferredMeetingTimes: form.preferredMeetingTimes, commitmentLevel: form.commitmentLevel }), 'Collaboration preferences saved.')}>{saving === 'preferences' ? 'Saving…' : 'Save collaboration preferences'}</button></div>
       </section>
 
       <section className="profile-card">
-        <SectionHeading icon={faGraduationCap} eyebrow="YOUR IDEAL TEAMMATES" title="Preferred teammates" description="Tell us a little about the students you would work well with. Leave any option at ‘Any’ if you are open to everyone." />
+        <SectionHeading title="Preferred teammates" description="Tell us a little about the students you would work well with. Leave any option at ‘Any’ if you are open to everyone." />
         <div className="profile-form-grid">
           <div className="profile-field"><label>Experience level</label><select disabled={locked} value={preferences.preferredExperienceLevel} onChange={(e) => setPreferences({ ...preferences, preferredExperienceLevel: e.target.value })}><option value="any">Any level</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>
           <div className="profile-field"><label>Commitment</label><select disabled={locked} value={preferences.preferredCommitmentLevel} onChange={(e) => setPreferences({ ...preferences, preferredCommitmentLevel: e.target.value })}><option value="any">Any commitment</option><option value="flexible">Flexible</option><option value="moderate">Moderate</option><option value="high">High</option></select></div>
           <div className="profile-field"><label>Working style</label><select disabled={locked} value={preferences.preferredWorkingStyle} onChange={(e) => setPreferences({ ...preferences, preferredWorkingStyle: e.target.value })}><option value="any">Any style</option><option value="independent">Independent</option><option value="collaborative">Collaborative</option><option value="structured">Structured</option><option value="flexible">Flexible</option></select></div>
         </div>
         <div className="profile-field profile-bio-field"><label htmlFor="preferred-teammates-notes">Anything else you value in a teammate? <span>Optional</span></label><textarea id="preferred-teammates-notes" rows="3" maxLength="1000" disabled={locked} value={preferences.additionalPreferences} onChange={(e) => setPreferences({ ...preferences, additionalPreferences: e.target.value })} placeholder="For example: communicates clearly, shares ideas and respects deadlines…" /></div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" disabled={locked || !!saving} onClick={() => saveSection('teammates', () => api.put('/students/me/partner-preferences', { ...preferences, additionalPreferences: preferences.additionalPreferences || null }), 'Preferred teammate settings saved.')}>{saving === 'teammates' ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faFloppyDisk} />} Save teammate preferences</button></div>
+        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'teammates'} disabled={locked || !!saving} onClick={() => saveSection('teammates', () => api.put('/students/me/partner-preferences', { ...preferences, additionalPreferences: preferences.additionalPreferences || null }), 'Preferred teammate settings saved.')}>{saving === 'teammates' ? 'Saving…' : 'Save teammate preferences'}</button></div>
       </section>
 
-      <div className="profile-bottom-note"><FontAwesomeIcon icon={faCircleInfo} /><span>Your profile details help EduMatch suggest relevant students and groups. You control what you share, and you can update your profile whenever it is not under review.</span></div>
+      <div className="profile-bottom-note"><span>Your profile details help EduMatch suggest relevant students and groups. You control what you share, and you can update your profile whenever it is not under review.</span></div>
     </div>
   );
 }
