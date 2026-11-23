@@ -45,7 +45,7 @@
 
 .profile-section-heading p {
   color: #718096;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -141,5 +141,174 @@
 
   .profile-section-heading h2 {
     font-size: 17px;
+  }
+}
+
+.profile-page {
+  font-size: 15px;
+}
+
+.profile-page-header p {
+  font-size: 15px;
+}
+
+.profile-status {
+  font-size: 13px;
+}
+
+.profile-readonly-field span {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.profile-readonly-field strong {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.profile-field label {
+  font-size: 14px;
+}
+
+.profile-field label span,
+.profile-field small {
+  font-size: 12px;
+}
+
+.profile-field textarea,
+.profile-field select,
+.profile-search input {
+  font-size: 14px;
+}
+
+.profile-field textarea {
+  line-height: 1.6;
+}
+
+.profile-catalog-select strong {
+  font-size: 14px;
+}
+
+.profile-catalog-select small {
+  font-size: 12px;
+}
+
+.profile-catalog-row select {
+  font-size: 12px;
+}
+
+.profile-tag {
+  font-size: 13px;
+}
+
+.profile-tag small {
+  font-size: 11px;
+}
+
+.profile-intention strong {
+  font-size: 14px;
+}
+
+.profile-intention p,
+.profile-availability > p {
+  font-size: 13px;
+}
+
+.profile-choice {
+  font-size: 13px;
+}
+
+.profile-selection-summary {
+  font-size: 13px;
+}
+
+.profile-expand-button {
+  font-size: 13px;
+}
+
+.profile-save-button {
+  font-size: 14px;
+}
+
+.profile-alert,
+.profile-lock-notice,
+.profile-bottom-note {
+  font-size: 13px;
+}
+
+.profile-lock-notice strong {
+  font-size: 14px;
+}
+
+.profile-empty-hint,
+.profile-loading {
+  font-size: 14px;
+}
+
+.profile-save-all-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #e1e7ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(25, 45, 70, 0.04);
+}
+
+.profile-save-all-button {
+  min-width: 190px;
+  min-height: 46px;
+}
+
+.profile-save-feedback {
+  width: 100%;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.profile-save-feedback.success {
+  border-color: #b8dfc7;
+  background: #eaf8f0;
+  color: #237a4d;
+}
+
+.profile-save-feedback.error {
+  border-color: #f0c5bf;
+  background: #fff0ee;
+  color: #a43f32;
+}
+
+@media (max-width: 760px) {
+  .profile-page-header p {
+    font-size: 14px;
+  }
+
+  .profile-save-all-area {
+    align-items: stretch;
+  }
+
+  .profile-save-all-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .profile-page {
+    padding: 20px 13px 30px;
+  }
+
+  .profile-card {
+    padding: 18px 15px;
+  }
+
+  .profile-section-heading p {
+    font-size: 13px;
   }
 }

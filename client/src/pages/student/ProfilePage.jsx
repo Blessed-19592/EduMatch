@@ -76,7 +76,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState('');
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [saveFeedback, setSaveFeedback] = useState(null);
   const [profile, setProfile] = useState(null);
   const [skillsCatalog, setSkillsCatalog] = useState([]);
   const [interestCatalog, setInterestCatalog] = useState([]);
@@ -167,18 +167,71 @@ export default function ProfilePage() {
     ? visibleInterests
     : visibleInterests.slice(0, INTERESTS_PREVIEW_LIMIT);
 
-  const saveSection = async (section, request, successMessage) => {
-    setSaving(section); setError(''); setNotice('');
+  const saveAll = async () => {
+    setSaving('all');
+    setError('');
+    setSaveFeedback(null);
+
+    const requests = [
+      {
+        section: 'personal and collaboration details',
+        save: () => api.patch('/students/me/profile', {
+          bio: form.bio || null,
+          collaborationStatus: form.collaborationStatus,
+          preferredMeetingMode: form.preferredMeetingMode,
+          preferredMeetingTimes: form.preferredMeetingTimes,
+          commitmentLevel: form.commitmentLevel,
+        }),
+      },
+      {
+        section: 'skills',
+        save: () => api.put('/me/skills', {
+          skills: selectedSkills.map(({ skillId, proficiencyLevel }) => ({
+            skillId,
+            proficiencyLevel,
+          })),
+        }),
+      },
+      {
+        section: 'interests',
+        save: () => api.put('/me/interests', { interestIds: selectedInterests }),
+      },
+      {
+        section: 'collaboration intentions',
+        save: () => api.put('/me/intentions', { intentionIds: selectedIntentions }),
+      },
+      {
+        section: 'teammate preferences',
+        save: () => api.put('/students/me/partner-preferences', {
+          ...preferences,
+          additionalPreferences: preferences.additionalPreferences || null,
+        }),
+      },
+    ];
+
     try {
-      await request();
-      setNotice(successMessage);
-      if (section === 'profile') {
-        const refreshed = await api.get('/students/me/profile');
-        setProfile(refreshed.data?.data || profile);
+      const results = await Promise.allSettled(
+        requests.map(({ save }) => Promise.resolve().then(save))
+      );
+      const failedRequests = results
+        .map((result, index) => ({ result, section: requests[index].section }))
+        .filter(({ result }) => result.status === 'rejected');
+
+      if (failedRequests.length > 0) {
+        const message = getApiErrorMessage(
+          failedRequests[0].result.reason,
+          'One or more profile sections could not be saved.'
+        );
+        setSaveFeedback({
+          type: 'error',
+          message: `Could not save ${failedRequests.map(({ section }) => section).join(', ')}. Other sections may have saved. ${message}`,
+        });
+      } else {
+        setSaveFeedback({ type: 'success', message: 'Profile saved successfully.' });
       }
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'Your changes could not be saved.'));
-    } finally { setSaving(''); }
+    } finally {
+      setSaving('');
+    }
   };
 
   const toggleSkill = (skill) => {
@@ -207,7 +260,6 @@ export default function ProfilePage() {
       </div>
 
       {error && <div className="profile-alert error" role="alert">{error}</div>}
-      {notice && <div className="profile-alert success" role="status">{notice}</div>}
       {locked && <div className="profile-lock-notice"><div><strong>Your profile is under review</strong><p>You can view your information, but editing is temporarily disabled until the review is complete.</p></div></div>}
 
       <section className="profile-card">
@@ -224,10 +276,9 @@ export default function ProfilePage() {
         </div>
         <div className="profile-field profile-bio-field">
           <label htmlFor="profile-bio">A little about you</label>
-          <textarea id="profile-bio" rows="4" maxLength="1000" value={form.bio} disabled={locked} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Introduce yourself, your academic interests or what you enjoy learning…" />
+          <textarea id="profile-bio" rows="4" maxLength="1000" value={form.bio} disabled={locked || !!saving} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Introduce yourself, your academic interests or what you enjoy learning…" />
           <small>{form.bio.length}/1000 characters</small>
         </div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'profile'} disabled={locked || !!saving} onClick={() => saveSection('profile', () => api.patch('/students/me/profile', { bio: form.bio || null }), 'Personal information saved.')}>{saving === 'profile' ? 'Saving…' : 'Save personal information'}</button></div>
       </section>
 
       <section className="profile-card">
@@ -237,15 +288,14 @@ export default function ProfilePage() {
           {displayedSkills.map((skill) => {
             const chosen = selectedSkills.find((item) => item.skillId === skill.skill_id);
             return <div className={`profile-catalog-row ${chosen ? 'chosen' : ''}`} key={skill.skill_id}>
-              <button type="button" className="profile-catalog-select" disabled={locked} onClick={() => toggleSkill(skill)}><span className="profile-checkbox" aria-hidden="true" /><span><strong>{skill.skill_name}</strong><small>{skill.category}</small></span></button>
-              {chosen && <select aria-label={`Proficiency in ${skill.skill_name}`} disabled={locked} value={chosen.proficiencyLevel} onChange={(e) => updateSkillLevel(skill.skill_id, e.target.value)}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select>}
+              <button type="button" className="profile-catalog-select" disabled={locked || !!saving} onClick={() => toggleSkill(skill)}><span className="profile-checkbox" aria-hidden="true" /><span><strong>{skill.skill_name}</strong><small>{skill.category}</small></span></button>
+              {chosen && <select aria-label={`Proficiency in ${skill.skill_name}`} disabled={locked || !!saving} value={chosen.proficiencyLevel} onChange={(e) => updateSkillLevel(skill.skill_id, e.target.value)}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select>}
             </div>;
           })}
           {visibleSkills.length === 0 && <p className="profile-empty-hint">No matching skills found in the catalogue.</p>}
         </div>
-        {visibleSkills.length > SKILLS_PREVIEW_LIMIT && <button type="button" className="profile-expand-button" aria-expanded={skillsExpanded} aria-controls="profile-skills-list" onClick={() => setSkillsExpanded((expanded) => !expanded)}>{skillsExpanded ? 'Show less' : `Show ${visibleSkills.length - SKILLS_PREVIEW_LIMIT} more skills`}</button>}
+        {visibleSkills.length > SKILLS_PREVIEW_LIMIT && <button type="button" className="profile-expand-button" aria-expanded={skillsExpanded} aria-controls="profile-skills-list" onClick={() => setSkillsExpanded((expanded) => !expanded)}>{skillsExpanded ? 'Show less' : 'Show more'}</button>}
         <div className="profile-selection-summary">{selectedSkills.length} skill{selectedSkills.length === 1 ? '' : 's'} selected · Up to 50</div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'skills'} disabled={locked || !!saving || selectedSkills.length > 50} onClick={() => saveSection('skills', () => api.put('/me/skills', { skills: selectedSkills.map(({ skillId, proficiencyLevel }) => ({ skillId, proficiencyLevel })) }), 'Skills and proficiency saved.')}>{saving === 'skills' ? 'Saving…' : 'Save skills'}</button></div>
       </section>
 
       <section className="profile-card">
@@ -254,12 +304,11 @@ export default function ProfilePage() {
         <div className="profile-tag-grid" id="profile-interests-list">
           {displayedInterests.map((interest) => {
             const chosen = selectedInterests.includes(interest.interest_id);
-            return <button type="button" key={interest.interest_id} disabled={locked} className={`profile-tag ${chosen ? 'selected' : ''}`} onClick={() => setSelectedInterests((current) => chosen ? current.filter((id) => id !== interest.interest_id) : [...current, interest.interest_id])}>{interest.interest_name}<small>{interest.interest_category}</small></button>;
+            return <button type="button" key={interest.interest_id} disabled={locked || !!saving} className={`profile-tag ${chosen ? 'selected' : ''}`} onClick={() => setSelectedInterests((current) => chosen ? current.filter((id) => id !== interest.interest_id) : [...current, interest.interest_id])}>{interest.interest_name}<small>{interest.interest_category}</small></button>;
           })}
         </div>
-        {visibleInterests.length > INTERESTS_PREVIEW_LIMIT && <button type="button" className="profile-expand-button" aria-expanded={interestsExpanded} aria-controls="profile-interests-list" onClick={() => setInterestsExpanded((expanded) => !expanded)}>{interestsExpanded ? 'Show less' : `Show ${visibleInterests.length - INTERESTS_PREVIEW_LIMIT} more interests`}</button>}
+        {visibleInterests.length > INTERESTS_PREVIEW_LIMIT && <button type="button" className="profile-expand-button" aria-expanded={interestsExpanded} aria-controls="profile-interests-list" onClick={() => setInterestsExpanded((expanded) => !expanded)}>{interestsExpanded ? 'Show less' : 'Show more'}</button>}
         <div className="profile-selection-summary">{selectedInterests.length} selected · Up to 30</div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'interests'} disabled={locked || !!saving || selectedInterests.length > 30} onClick={() => saveSection('interests', () => api.put('/me/interests', { interestIds: selectedInterests }), 'Interests saved.')}>{saving === 'interests' ? 'Saving…' : 'Save interests'}</button></div>
       </section>
 
       <section className="profile-card">
@@ -267,38 +316,54 @@ export default function ProfilePage() {
         <div className="profile-intention-grid">
           {intentionsCatalog.map((item) => {
             const chosen = selectedIntentions.includes(item.intention_id);
-            return <button type="button" key={item.intention_id} disabled={locked} className={`profile-intention ${chosen ? 'selected' : ''}`} onClick={() => setSelectedIntentions((current) => chosen ? current.filter((id) => id !== item.intention_id) : current.length < 5 ? [...current, item.intention_id] : current)}>
+            return <button type="button" key={item.intention_id} disabled={locked || !!saving} className={`profile-intention ${chosen ? 'selected' : ''}`} onClick={() => setSelectedIntentions((current) => chosen ? current.filter((id) => id !== item.intention_id) : current.length < 5 ? [...current, item.intention_id] : current)}>
               <span className="profile-intention-check" aria-hidden="true" /><strong>{item.intention_name}</strong><p>{INTENTION_DESCRIPTIONS[item.intention_code] || item.description}</p>
             </button>;
           })}
         </div>
         <div className="profile-selection-summary">{selectedIntentions.length} of 5 intentions selected</div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'intentions'} disabled={locked || !!saving || selectedIntentions.length > 5} onClick={() => saveSection('intentions', () => api.put('/me/intentions', { intentionIds: selectedIntentions }), 'Collaboration intentions saved.')}>{saving === 'intentions' ? 'Saving…' : 'Save intentions'}</button></div>
       </section>
 
       <section className="profile-card">
         <SectionHeading title="Collaboration preferences" description="Set a few simple preferences for the kind of teamwork that suits you." />
         <div className="profile-form-grid">
-          <div className="profile-field"><label>Collaboration status</label><select disabled={locked} value={form.collaborationStatus} onChange={(e) => setForm({ ...form, collaborationStatus: e.target.value })}><option value="available">Available to collaborate</option><option value="currently_collaborating">Currently collaborating</option><option value="unavailable">Not available right now</option></select></div>
-          <div className="profile-field"><label>Preferred meeting mode</label><select disabled={locked} value={form.preferredMeetingMode} onChange={(e) => setForm({ ...form, preferredMeetingMode: e.target.value })}><option value="any">No preference</option><option value="remote">Remote</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></div>
-          <div className="profile-field"><label>Commitment level</label><select disabled={locked} value={form.commitmentLevel} onChange={(e) => setForm({ ...form, commitmentLevel: e.target.value })}><option value="flexible">Flexible</option><option value="moderate">Moderate</option><option value="high">High</option></select></div>
+          <div className="profile-field"><label>Collaboration status</label><select disabled={locked || !!saving} value={form.collaborationStatus} onChange={(e) => setForm({ ...form, collaborationStatus: e.target.value })}><option value="available">Available to collaborate</option><option value="currently_collaborating">Currently collaborating</option><option value="unavailable">Not available right now</option></select></div>
+          <div className="profile-field"><label>Preferred meeting mode</label><select disabled={locked || !!saving} value={form.preferredMeetingMode} onChange={(e) => setForm({ ...form, preferredMeetingMode: e.target.value })}><option value="any">No preference</option><option value="remote">Remote</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></div>
+          <div className="profile-field"><label>Commitment level</label><select disabled={locked || !!saving} value={form.commitmentLevel} onChange={(e) => setForm({ ...form, commitmentLevel: e.target.value })}><option value="flexible">Flexible</option><option value="moderate">Moderate</option><option value="high">High</option></select></div>
         </div>
-        <div className="profile-field profile-availability"><label>When are you generally available?</label><p>Choose all that apply. Keep it simple — you can update this later.</p><ChoiceChips options={AVAILABILITY} value={form.preferredMeetingTimes} onChange={(value) => setForm({ ...form, preferredMeetingTimes: value })} multiple disabled={locked} /></div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'preferences'} disabled={locked || !!saving} onClick={() => saveSection('preferences', () => api.patch('/students/me/profile', { collaborationStatus: form.collaborationStatus, preferredMeetingMode: form.preferredMeetingMode, preferredMeetingTimes: form.preferredMeetingTimes, commitmentLevel: form.commitmentLevel }), 'Collaboration preferences saved.')}>{saving === 'preferences' ? 'Saving…' : 'Save collaboration preferences'}</button></div>
+        <div className="profile-field profile-availability"><label>When are you generally available?</label><p>Choose all that apply. Keep it simple — you can update this later.</p><ChoiceChips options={AVAILABILITY} value={form.preferredMeetingTimes} onChange={(value) => setForm({ ...form, preferredMeetingTimes: value })} multiple disabled={locked || !!saving} /></div>
       </section>
 
       <section className="profile-card">
         <SectionHeading title="Preferred teammates" description="Tell us a little about the students you would work well with. Leave any option at ‘Any’ if you are open to everyone." />
         <div className="profile-form-grid">
-          <div className="profile-field"><label>Experience level</label><select disabled={locked} value={preferences.preferredExperienceLevel} onChange={(e) => setPreferences({ ...preferences, preferredExperienceLevel: e.target.value })}><option value="any">Any level</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>
-          <div className="profile-field"><label>Commitment</label><select disabled={locked} value={preferences.preferredCommitmentLevel} onChange={(e) => setPreferences({ ...preferences, preferredCommitmentLevel: e.target.value })}><option value="any">Any commitment</option><option value="flexible">Flexible</option><option value="moderate">Moderate</option><option value="high">High</option></select></div>
-          <div className="profile-field"><label>Working style</label><select disabled={locked} value={preferences.preferredWorkingStyle} onChange={(e) => setPreferences({ ...preferences, preferredWorkingStyle: e.target.value })}><option value="any">Any style</option><option value="independent">Independent</option><option value="collaborative">Collaborative</option><option value="structured">Structured</option><option value="flexible">Flexible</option></select></div>
+          <div className="profile-field"><label>Experience level</label><select disabled={locked || !!saving} value={preferences.preferredExperienceLevel} onChange={(e) => setPreferences({ ...preferences, preferredExperienceLevel: e.target.value })}><option value="any">Any level</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>
+          <div className="profile-field"><label>Commitment</label><select disabled={locked || !!saving} value={preferences.preferredCommitmentLevel} onChange={(e) => setPreferences({ ...preferences, preferredCommitmentLevel: e.target.value })}><option value="any">Any commitment</option><option value="flexible">Flexible</option><option value="moderate">Moderate</option><option value="high">High</option></select></div>
+          <div className="profile-field"><label>Working style</label><select disabled={locked || !!saving} value={preferences.preferredWorkingStyle} onChange={(e) => setPreferences({ ...preferences, preferredWorkingStyle: e.target.value })}><option value="any">Any style</option><option value="independent">Independent</option><option value="collaborative">Collaborative</option><option value="structured">Structured</option><option value="flexible">Flexible</option></select></div>
         </div>
-        <div className="profile-field profile-bio-field"><label htmlFor="preferred-teammates-notes">Anything else you value in a teammate? <span>Optional</span></label><textarea id="preferred-teammates-notes" rows="3" maxLength="1000" disabled={locked} value={preferences.additionalPreferences} onChange={(e) => setPreferences({ ...preferences, additionalPreferences: e.target.value })} placeholder="For example: communicates clearly, shares ideas and respects deadlines…" /></div>
-        <div className="profile-actions"><button type="button" className="profile-save-button" aria-busy={saving === 'teammates'} disabled={locked || !!saving} onClick={() => saveSection('teammates', () => api.put('/students/me/partner-preferences', { ...preferences, additionalPreferences: preferences.additionalPreferences || null }), 'Preferred teammate settings saved.')}>{saving === 'teammates' ? 'Saving…' : 'Save teammate preferences'}</button></div>
+        <div className="profile-field profile-bio-field"><label htmlFor="preferred-teammates-notes">Anything else you value in a teammate? <span>Optional</span></label><textarea id="preferred-teammates-notes" rows="3" maxLength="1000" disabled={locked || !!saving} value={preferences.additionalPreferences} onChange={(e) => setPreferences({ ...preferences, additionalPreferences: e.target.value })} placeholder="For example: communicates clearly, shares ideas and respects deadlines…" /></div>
       </section>
 
       <div className="profile-bottom-note"><span>Your profile details help EduMatch suggest relevant students and groups. You control what you share, and you can update your profile whenever it is not under review.</span></div>
+      <div className="profile-save-all-area">
+        {saveFeedback && (
+          <p
+            className={`profile-save-feedback ${saveFeedback.type}`}
+            role={saveFeedback.type === 'error' ? 'alert' : 'status'}
+          >
+            {saveFeedback.message}
+          </p>
+        )}
+        <button
+          type="button"
+          className="profile-save-button profile-save-all-button"
+          aria-busy={saving === 'all'}
+          disabled={locked || !!saving || selectedSkills.length > 50 || selectedInterests.length > 30 || selectedIntentions.length > 5}
+          onClick={saveAll}
+        >
+          {saving === 'all' ? 'Saving profile…' : 'Save all changes'}
+        </button>
+      </div>
     </div>
   );
 }
