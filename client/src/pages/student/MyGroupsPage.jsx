@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faUsers, faSearch, faArrowRight, faLayerGroup,
+  faUsers, faSearch, faArrowRight,
   faCircleCheck, faClock, faChevronDown, faChevronUp,
 } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
@@ -171,11 +171,9 @@ export default function MyGroupsPage({ onNavigate }) {
     <div className="my-groups-page">
       <header className="mg-heading-row">
         <div>
-          <span className="mg-eyebrow">YOUR COLLABORATIONS</span>
           <h1>My groups</h1>
           <p>Keep track of the groups you have created or joined.</p>
         </div>
-        <div className="mg-heading-icon"><FontAwesomeIcon icon={faLayerGroup} /></div>
       </header>
 
       {error && (

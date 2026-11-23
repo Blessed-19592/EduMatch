@@ -89,7 +89,7 @@ export default function DiscoverGroupsPage() {
 
       <div className="discover-toolbar">
         <label className="discover-search"><FontAwesomeIcon icon={faMagnifyingGlass} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search groups, intentions or skills..." /></label>
-        <label className="discover-scope"><FontAwesomeIcon icon={faLocationDot} /><select value={scope} onChange={(e) => setScope(e.target.value)}>{SCOPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></label>
+        <label className="discover-scope"><FontAwesomeIcon icon={faLocationDot} /><span className="discover-scope-label">Groups in</span><select aria-label="Group discovery area" value={scope} onChange={(e) => setScope(e.target.value)}>{SCOPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></label>
       </div>
 
       <section className="discover-filter-panel">
