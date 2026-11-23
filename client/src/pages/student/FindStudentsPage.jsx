@@ -398,7 +398,7 @@ export default function FindStudentsPage() {
         </div>
 
         {!loading && (
-          <span className="find-students-count">
+          <span className="find-students-count" role="status" aria-live="polite">
             {students.length} {students.length === 1 ? 'match' : 'matches'}
           </span>
         )}

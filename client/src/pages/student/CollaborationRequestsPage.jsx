@@ -6,9 +6,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Send,
   AlertCircle,
-  Inbox,
   UserRound,
   GraduationCap,
   CalendarDays,
@@ -240,26 +238,12 @@ export default function CollaborationRequestsPage() {
     <section className="collaboration-requests-page">
       <div className="collaboration-requests-heading">
         <div>
-          <span className="page-eyebrow">YOUR CONNECTIONS</span>
           <h1>Collaboration Requests</h1>
           <p>
             Manage invitations from other students and track
-            the requests you've sent.
+            the requests you've sent. Lists update when you switch tabs.
           </p>
         </div>
-
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={fetchRequests}
-          disabled={loading}
-        >
-          <RefreshCw
-            size={16}
-            className={loading ? 'collaboration-spinning' : ''}
-          />
-          Refresh
-        </button>
       </div>
 
       <div className="collaboration-request-tabs">
@@ -268,7 +252,6 @@ export default function CollaborationRequestsPage() {
           className={activeTab === 'received' ? 'active' : ''}
           onClick={() => setActiveTab('received')}
         >
-          <Inbox size={17} />
           Received
         </button>
 
@@ -277,7 +260,6 @@ export default function CollaborationRequestsPage() {
           className={activeTab === 'sent' ? 'active' : ''}
           onClick={() => setActiveTab('sent')}
         >
-          <Send size={17} />
           Sent
         </button>
       </div>

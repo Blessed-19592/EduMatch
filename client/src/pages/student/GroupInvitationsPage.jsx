@@ -124,7 +124,6 @@ export default function GroupInvitationsPage() {
         <div className="group-invitations-page">
             <header className="gi-header">
                 <div>
-                    <span className="gi-eyebrow">REQUEST MANAGEMENT</span>
                     <h1>Group Invitations</h1>
                     <p>
                         Manage invitations to join student collaboration groups.
@@ -209,10 +208,6 @@ export default function GroupInvitationsPage() {
                             >
                                 <div className="gi-card-top">
                                     <div className="gi-card-info">
-                                        <span className="gi-type-label">
-                                            GROUP INVITATION
-                                        </span>
-
                                         <h2>{invitation.group_name}</h2>
 
                                         <p className="gi-person">

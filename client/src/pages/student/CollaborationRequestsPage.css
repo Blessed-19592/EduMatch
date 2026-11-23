@@ -352,3 +352,115 @@
     margin-bottom: 24px;
   }
 }
+
+.collaboration-requests-page {
+  max-width: 1280px;
+  padding: 32px clamp(16px, 3vw, 42px) 48px;
+  color: #111111;
+}
+
+.collaboration-requests-heading h1 {
+  margin: 0 0 8px;
+  color: var(--primary);
+  font-size: clamp(28px, 3vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.collaboration-requests-heading p,
+.collaboration-requests-results-heading p,
+.collaboration-request-student p,
+.collaboration-request-academics,
+.collaboration-request-message span,
+.collaboration-request-message p,
+.collaboration-requests-empty p {
+  color: #111111;
+}
+
+.collaboration-request-tabs {
+  border-color: #dfe5ed;
+}
+
+.collaboration-request-tabs button {
+  color: #111111;
+}
+
+.collaboration-request-tabs button.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.collaboration-requests-results-heading h2 {
+  color: var(--primary);
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.collaboration-requests-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #9ed5ad;
+  border-radius: 9px;
+  background: #bfe9ca;
+  color: #111111;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.collaboration-request-card {
+  border-color: #e1e7ef;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(25, 45, 70, 0.04);
+}
+
+.collaboration-request-student h3 {
+  color: #111111;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.collaboration-request-avatar,
+.collaboration-empty-icon {
+  background: #edf3fd;
+  color: var(--primary);
+}
+
+.collaboration-request-message {
+  background: #f3f6fa;
+}
+
+.collaboration-request-message span {
+  font-size: 13px;
+}
+
+.collaboration-request-message p {
+  font-size: 14px;
+}
+
+.accept-request-button {
+  background: #28694b;
+  border-color: #28694b;
+}
+
+.accept-request-button:hover:not(:disabled) {
+  background: #20583f;
+  border-color: #20583f;
+}
+
+.collaboration-requests-empty h3 {
+  color: #111111;
+}
+
+@media (max-width: 600px) {
+  .collaboration-requests-page {
+    padding: 24px 16px 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .collaboration-requests-page {
+    padding: 20px 13px 30px;
+  }
+}

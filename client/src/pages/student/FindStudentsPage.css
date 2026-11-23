@@ -423,10 +423,22 @@
 }
 
 .find-students-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
   border: 1px solid #9ed5ad;
+  border-radius: 9px;
   background: #bfe9ca;
   color: #111111;
   font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.match-reasons h4 {
+  padding-left: 19px;
 }
 
 .find-students-grid {

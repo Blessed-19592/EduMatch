@@ -96,7 +96,6 @@ export default function MembershipRequestsPage() {
         <div className="membership-requests-page">
             <header className="mr-header">
                 <div>
-                    <span className="mr-eyebrow">REQUEST MANAGEMENT</span>
                     <h1>Membership Requests</h1>
                     <p>
                         Manage requests to join your groups and track
