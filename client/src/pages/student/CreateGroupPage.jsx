@@ -69,6 +69,12 @@ export default function CreateGroupPage({ onNavigate }) {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    if (!success) return undefined;
+    const timeoutId = window.setTimeout(() => setSuccess(''), 3500);
+    return () => window.clearTimeout(timeoutId);
+  }, [success]);
+
   const filteredSkills = useMemo(() => {
     const query = skillSearch.trim().toLowerCase();
     if (!query) return skills;
@@ -136,7 +142,7 @@ export default function CreateGroupPage({ onNavigate }) {
     setSubmitting(true);
     try {
       await api.post('/groups', payload);
-      setSuccess('Your group has been created successfully.');
+      setSuccess('Group created successfully.');
       setForm(emptyForm);
       setSkillSearch('');
     } catch (requestError) {
@@ -162,7 +168,8 @@ export default function CreateGroupPage({ onNavigate }) {
       {error && <div className="cg-alert cg-alert-error" role="alert">{error}</div>}
       {success && (
         <div className="cg-alert cg-alert-success" role="status">
-          <FontAwesomeIcon icon={faCheck} /> {success}
+          <FontAwesomeIcon icon={faCheck} />
+          <span>{success}</span>
           <button type="button" onClick={() => onNavigate?.('Discover Groups')}>View groups</button>
         </div>
       )}
