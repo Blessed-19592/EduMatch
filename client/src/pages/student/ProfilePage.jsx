@@ -254,9 +254,11 @@ export default function ProfilePage() {
           <h1>My Profile</h1>
           <p>Tell other students what you know, what interests you and how you like to collaborate.</p>
         </div>
-        <div className={`profile-status status-${profile?.profile_review_status || 'draft'}`}>
-          <span />{(profile?.profile_review_status || 'draft').replaceAll('_', ' ')}
-        </div>
+        {profile?.profile_review_status && profile.profile_review_status !== 'draft' && (
+          <div className={`profile-status status-${profile.profile_review_status}`}>
+            <span />{profile.profile_review_status.replaceAll('_', ' ')}
+          </div>
+        )}
       </div>
 
       {error && <div className="profile-alert error" role="alert">{error}</div>}
