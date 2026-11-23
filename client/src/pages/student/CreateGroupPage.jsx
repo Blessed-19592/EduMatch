@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft, faCheck, faCircleInfo, faPlus, faSearch,
-  faUsers, faWandMagicSparkles
 } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
 import './CreateGroupPage.css';
@@ -155,11 +154,9 @@ export default function CreateGroupPage({ onNavigate }) {
     <div className="create-group-page">
       <div className="cg-heading-row">
         <div>
-          <span className="cg-eyebrow">BUILD YOUR TEAM</span>
           <h1>Create a group</h1>
           <p>Set a clear purpose and invite students who want to work towards the same goal.</p>
         </div>
-        <div className="cg-heading-icon"><FontAwesomeIcon icon={faUsers} /></div>
       </div>
 
       {error && <div className="cg-alert cg-alert-error" role="alert">{error}</div>}
