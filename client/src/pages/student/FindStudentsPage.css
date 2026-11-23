@@ -189,10 +189,6 @@
   font-size: 13px;
 }
 
-.match-reasons h4 svg {
-  color: #2563eb;
-}
-
 .match-reasons ul {
   display: grid;
   gap: 8px;
@@ -421,9 +417,9 @@
 }
 
 .find-students-results-heading h2 {
-  color: #111111;
+  color: var(--primary);
   font-size: 19px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .find-students-count {
@@ -447,17 +443,15 @@
 .match-reasons h4,
 .find-students-empty h3 {
   color: #111111;
+  font-weight: 800;
 }
 
 .match-score strong {
-  color: #111111;
+  color: #15803d;
+  font-weight: 800;
 }
 
 .find-student-academics svg {
-  color: var(--primary);
-}
-
-.match-reasons h4 svg {
   color: var(--primary);
 }
 
@@ -468,6 +462,22 @@
 }
 
 @media (max-width: 480px) {
+  .find-students-results-heading h2 {
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .find-student-identity h3 {
+    font-size: 17px;
+    font-weight: 800;
+  }
+
+  .match-reasons h4,
+  .find-students-empty h3 {
+    font-size: 15px;
+    font-weight: 800;
+  }
+
   .find-students-filter-heading {
     align-items: flex-start;
     gap: 10px;

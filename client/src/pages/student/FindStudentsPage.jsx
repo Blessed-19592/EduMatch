@@ -6,7 +6,6 @@ import {
   Users,
   GraduationCap,
   Building2,
-  Sparkles,
   UserRound,
   AlertCircle,
   Send,
@@ -76,10 +75,7 @@ function MatchCard({
 
       {student.reasons?.length > 0 && (
         <div className="match-reasons">
-          <h4>
-            <Sparkles size={15} />
-            Why this student matches
-          </h4>
+          <h4>Why this student matches</h4>
 
           <ul>
             {student.reasons.map((reason, index) => (
