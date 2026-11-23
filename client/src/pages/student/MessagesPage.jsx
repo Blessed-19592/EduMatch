@@ -7,14 +7,50 @@ import {
   faUsers,
   faCircle,
   faRotate,
+  faPaperclip,
+  faFile,
+  faXmark,
+  faSpinner,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import api, { getApiErrorMessage } from '../../api/api';
+import { useAuth } from '../../context/AuthContext';
 import './MessagesPage.css';
 
-const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+const MAX_ATTACHMENTS = 5;
+const ACCEPTED_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.webp', '.pdf', '.docx', '.xlsx', '.pptx'
+]);
+
+const getSocketUrl = () => {
+  const configuredUrl = import.meta.env.VITE_SOCKET_URL;
+
+  if (import.meta.env.DEV) {
+    const configuredPort = configuredUrl ? new URL(configuredUrl).port : '';
+    const port = configuredPort || '5000';
+    return `${window.location.protocol}//${window.location.hostname}:${port}`;
+  }
+
+  return configuredUrl || window.location.origin;
+};
+
+const SOCKET_URL = getSocketUrl();
+
+const formatFileSize = (size) => {
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getFileExtension = (fileName) => {
+  const dotIndex = fileName.lastIndexOf('.');
+  return dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : '';
+};
+
+const getAttachmentUrl = (groupId, attachmentId) =>
+  `/api/groups/${encodeURIComponent(groupId)}/chat-attachments/${encodeURIComponent(attachmentId)}`;
+
 const formatMessageTime = (date) => {
   if (!date) return '';
 
@@ -42,10 +78,13 @@ const formatMessageDate = (date) => {
 };
 
 function MessagesPage() {
+  const { user } = useAuth();
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState('');
 
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -56,13 +95,15 @@ function MessagesPage() {
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
 
   const socketRef = useRef(null);
-const selectedGroupRef = useRef(null);
-const chatMessagesRef = useRef(null);
+  const selectedGroupRef = useRef(null);
+  const chatMessagesRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const objectUrlsRef = useRef(new Set());
 
-  // Keep the selected group available to socket event handlers.
-  useEffect(() => {
-    selectedGroupRef.current = selectedGroup;
-  }, [selectedGroup]);
+  useEffect(() => () => {
+    objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    objectUrlsRef.current.clear();
+  }, []);
 
   // Load groups the student belongs to.
   const loadGroups = useCallback(async () => {
@@ -76,15 +117,15 @@ const chatMessagesRef = useRef(null);
 
       setGroups(fetchedGroups);
 
-      setSelectedGroup((current) => {
-        if (!current) return null;
-
-        return (
-          fetchedGroups.find(
-            (group) => group.group_id === current.group_id
+      const currentGroup = selectedGroupRef.current;
+      const refreshedGroup = currentGroup
+        ? fetchedGroups.find(
+            (group) => group.group_id === currentGroup.group_id
           ) || null
-        );
-      });
+        : null;
+
+      selectedGroupRef.current = refreshedGroup;
+      setSelectedGroup(refreshedGroup);
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -115,60 +156,85 @@ const chatMessagesRef = useRef(null);
     });
   }, []);
 
-  // Establish the authenticated Socket.IO connection.
-  useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-    });
+  const releasePreview = (attachment) => {
+    if (!attachment.previewUrl) return;
+    URL.revokeObjectURL(attachment.previewUrl);
+    objectUrlsRef.current.delete(attachment.previewUrl);
+  };
 
-    socketRef.current = socket;
+  const removePendingUpload = async (groupId, attachmentId) => {
+    try {
+      await api.delete(
+        `/groups/${groupId}/chat-attachments/${attachmentId}`
+      );
+    } catch (requestError) {
+      console.error('Unable to remove a pending chat attachment:', requestError);
+      setError(
+        'An unused upload could not be removed. It will expire automatically.'
+      );
+    }
+  };
 
-    socket.on('connect', () => {
-      setConnectionStatus('connected');
-      setError('');
+  const handleFilesSelected = (event) => {
+    const files = Array.from(event.target.files || []);
+    const accepted = [];
+    const rejected = [];
+    let remaining = MAX_ATTACHMENTS - selectedFiles.length;
 
-      const currentGroup = selectedGroupRef.current;
-
-      if (currentGroup) {
-        joinGroupChat(socket, currentGroup.group_id);
+    for (const file of files) {
+      if (remaining <= 0) {
+        rejected.push('A message can include up to 5 files.');
+        break;
       }
-    });
 
-    socket.on('disconnect', () => {
-      setConnectionStatus('disconnected');
-    });
-
-    socket.on('connect_error', (error) => {
-  console.error('Socket connection failed:', error.message);
-  setConnectionStatus('disconnected');
-  setError(error.message);
-    });
-
-    socket.on('group:new-message', (message) => {
-      const currentGroup = selectedGroupRef.current;
-
-      if (
-        currentGroup &&
-        message.group_id === currentGroup.group_id
-      ) {
-        addMessage(message);
+      if (file.size === 0 || file.size > MAX_ATTACHMENT_SIZE) {
+        rejected.push(`${file.name} must be smaller than or equal to 10 MB.`);
+        continue;
       }
-    });
 
-    return () => {
-      socket.removeAllListeners();
-      socket.disconnect();
-      socketRef.current = null;
-    };
-  }, [addMessage]);
+      if (!ACCEPTED_EXTENSIONS.has(getFileExtension(file.name))) {
+        rejected.push(`${file.name} is not a supported file type.`);
+        continue;
+      }
 
-  // Join a group and load its chat history.
-  const joinGroupChat = (socket, groupId) => {
+      const previewUrl = file.type.startsWith('image/')
+        ? URL.createObjectURL(file)
+        : '';
+
+      if (previewUrl) objectUrlsRef.current.add(previewUrl);
+
+      accepted.push({
+        key: `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
+        file,
+        previewUrl,
+        attachmentId: null
+      });
+      remaining -= 1;
+    }
+
+    if (accepted.length > 0) {
+      setSelectedFiles((previous) => [...previous, ...accepted]);
+    }
+
+    setError(rejected.join(' '));
+    event.target.value = '';
+  };
+
+  const handleRemoveFile = async (attachment) => {
+    if (attachment.attachmentId && selectedGroup) {
+      await removePendingUpload(
+        selectedGroup.group_id,
+        attachment.attachmentId
+      );
+    }
+
+    releasePreview(attachment);
+    setSelectedFiles((previous) =>
+      previous.filter((file) => file.key !== attachment.key)
+    );
+  };
+
+  const joinGroupChat = useCallback((socket, groupId) => {
     setLoadingMessages(true);
     setMessages([]);
     setError('');
@@ -207,10 +273,77 @@ const chatMessagesRef = useRef(null);
         }
       );
     });
-  };
+  }, []);
+
+  // Establish the authenticated Socket.IO connection.
+  useEffect(() => {
+    const socket = io(SOCKET_URL, {
+      withCredentials: true,
+      reconnection: true,
+      timeout: 8000,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 500,
+      reconnectionDelayMax: 3000,
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      setConnectionStatus('connected');
+      setError('');
+
+      const currentGroup = selectedGroupRef.current;
+
+      if (currentGroup) {
+        joinGroupChat(socket, currentGroup.group_id);
+      }
+    });
+
+    socket.on('disconnect', () => {
+      setConnectionStatus('disconnected');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection failed:', error.message);
+      setConnectionStatus('disconnected');
+      setError('Messaging is temporarily unavailable. Reconnecting…');
+    });
+
+    socket.on('group:new-message', (message) => {
+      const currentGroup = selectedGroupRef.current;
+
+      if (
+        currentGroup &&
+        message.group_id === currentGroup.group_id
+      ) {
+        addMessage(message);
+      }
+    });
+
+    return () => {
+      socket.removeAllListeners();
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [addMessage, joinGroupChat]);
 
   // Select a group conversation.
-  const handleSelectGroup = (group) => {
+  const handleSelectGroup = async (group) => {
+    if (sending) return;
+
+    const previousGroupId = selectedGroup?.group_id;
+    const unusedUploads = selectedFiles.filter((file) => file.attachmentId);
+
+    if (previousGroupId && unusedUploads.length > 0) {
+      await Promise.all(
+        unusedUploads.map((file) =>
+          removePendingUpload(previousGroupId, file.attachmentId)
+        )
+      );
+    }
+
+    selectedFiles.forEach(releasePreview);
+    setSelectedFiles([]);
     setSelectedGroup(group);
     selectedGroupRef.current = group;
 
@@ -229,16 +362,16 @@ const chatMessagesRef = useRef(null);
   };
 
   // Send a message.
-  const handleSendMessage = (event) => {
+  const handleSendMessage = async (event) => {
     event.preventDefault();
 
     const content = messageInput.trim();
     const socket = socketRef.current;
 
-    if (!content || !selectedGroup || sending) return;
+    if ((!content && selectedFiles.length === 0) || !selectedGroup || sending) return;
 
     if (!socket?.connected) {
-      setError('You are disconnected. Reconnecting...');
+      setError('You are disconnected. Reconnecting…');
       return;
     }
 
@@ -250,42 +383,94 @@ const chatMessagesRef = useRef(null);
     setSending(true);
     setError('');
 
-    socket.emit(
-      'group:message',
-      {
-        groupId: selectedGroup.group_id,
-        messageContent: content,
-      },
-      (response) => {
-        setSending(false);
+    try {
+      const attachmentIds = [];
 
-        if (!response || response.status !== 'success') {
-          setError(
-            response?.message || 'Your message could not be sent.'
+      for (let index = 0; index < selectedFiles.length; index += 1) {
+        const attachment = selectedFiles[index];
+        let attachmentId = attachment.attachmentId;
+
+        if (!attachmentId) {
+          setUploadProgress(`Uploading file ${index + 1} of ${selectedFiles.length}…`);
+          const params = new URLSearchParams({
+            name: attachment.file.name,
+            type: attachment.file.type
+          });
+          const uploadResponse = await api.post(
+            `/groups/${selectedGroup.group_id}/chat-attachments?${params.toString()}`,
+            attachment.file,
+            { headers: { 'Content-Type': 'application/octet-stream' } }
           );
-          return;
+
+          attachmentId =
+            uploadResponse.data?.data?.attachment?.attachment_id;
+
+          if (!attachmentId) {
+            throw new Error('The server did not confirm the uploaded file.');
+          }
+
+          setSelectedFiles((previous) =>
+            previous.map((file) =>
+              file.key === attachment.key
+                ? { ...file, attachmentId }
+                : file
+            )
+          );
         }
 
-        if (response.message) {
-          addMessage(response.message);
-        }
-
-        setMessageInput('');
+        attachmentIds.push(attachmentId);
       }
-    );
+
+      setUploadProgress('Sending message…');
+      const response = await new Promise((resolve, reject) => {
+        socket.timeout(15000).emit(
+          'group:message',
+          {
+            groupId: selectedGroup.group_id,
+            messageContent: content,
+            attachmentIds
+          },
+          (timeoutError, acknowledgement) => {
+            if (timeoutError) {
+              reject(new Error('The message timed out. Please try again.'));
+            } else if (acknowledgement?.status !== 'success') {
+              reject(new Error(
+                acknowledgement?.message || 'Your message could not be sent.'
+              ));
+            } else {
+              resolve(acknowledgement);
+            }
+          }
+        );
+      });
+
+      if (response.message) addMessage(response.message);
+      selectedFiles.forEach(releasePreview);
+      setSelectedFiles([]);
+      setMessageInput('');
+    } catch (requestError) {
+      setError(
+        requestError.response
+          ? getApiErrorMessage(requestError)
+          : requestError.message || 'Your message could not be sent.'
+      );
+    } finally {
+      setSending(false);
+      setUploadProgress('');
+    }
   };
 
   // Scroll only the chat messages area to the latest message.
-useEffect(() => {
-  const chatContainer = chatMessagesRef.current;
+  useEffect(() => {
+    const chatContainer = chatMessagesRef.current;
 
-  if (chatContainer) {
-    chatContainer.scrollTo({
-      top: chatContainer.scrollHeight,
-      behavior: 'smooth',
-    });
-  }
-}, [messages]);
+    if (chatContainer) {
+      chatContainer.scrollTo({
+        top: chatContainer.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages]);
 
   const handleBackToGroups = () => {
     setMobileChatOpen(false);
@@ -303,14 +488,52 @@ useEffect(() => {
     return result;
   }, {});
 
+  const renderAttachment = (attachment) => {
+    const url = getAttachmentUrl(
+      selectedGroup.group_id,
+      attachment.attachment_id
+    );
+
+    if (attachment.mime_type?.startsWith('image/')) {
+      return (
+        <a
+          className="chat-image-attachment"
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          key={attachment.attachment_id}
+        >
+          <img
+            src={url}
+            alt={attachment.original_filename}
+            loading="lazy"
+          />
+          <span>{attachment.original_filename}</span>
+        </a>
+      );
+    }
+
+    return (
+      <a
+        className="chat-file-attachment"
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        key={attachment.attachment_id}
+      >
+        <FontAwesomeIcon icon={faFile} />
+        <span>
+          <strong>{attachment.original_filename}</strong>
+          <small>{formatFileSize(Number(attachment.size_bytes) || 0)}</small>
+        </span>
+      </a>
+    );
+  };
+
   return (
     <div className="messages-page">
       <div className="messages-heading">
         <div>
-          <span className="messages-eyebrow">
-            COLLABORATION
-          </span>
-
           <h1>Messages</h1>
 
           <p>
@@ -341,8 +564,14 @@ useEffect(() => {
               <h2>Conversations</h2>
               <span>{groups.length} groups</span>
             </div>
-
-            <FontAwesomeIcon icon={faComments} />
+            <span className={`messages-live-status ${connectionStatus}`} role="status" aria-live="polite">
+              <FontAwesomeIcon icon={faCircle} />
+              {connectionStatus === 'connected'
+                ? 'Online'
+                : connectionStatus === 'connecting'
+                ? 'Connecting'
+                : 'Reconnecting'}
+            </span>
           </div>
 
           {loadingGroups ? (
@@ -371,6 +600,8 @@ useEffect(() => {
                       : ''
                   }`}
                   onClick={() => handleSelectGroup(group)}
+                  disabled={sending}
+                  aria-current={selectedGroup?.group_id === group.group_id ? 'true' : undefined}
                 >
                   <div className="conversation-avatar">
                     <FontAwesomeIcon icon={faUsers} />
@@ -481,7 +712,11 @@ useEffect(() => {
                         {dateMessages.map((message) => (
                           <div
                             key={message.message_id}
-                            className="chat-message-row"
+                            className={`chat-message-row ${
+                              String(message.sender_id) === String(user?.userId)
+                                ? 'own'
+                                : ''
+                            }`}
                           >
                             <div className="chat-message-avatar">
                               {(message.sender_name || '?')
@@ -492,7 +727,9 @@ useEffect(() => {
                             <div className="chat-message-content">
                               <div className="chat-message-meta">
                                 <strong>
-                                  {message.sender_name ||
+                                  {String(message.sender_id) === String(user?.userId)
+                                    ? 'You'
+                                    : message.sender_name ||
                                     'Group member'}
                                 </strong>
 
@@ -503,9 +740,16 @@ useEffect(() => {
                                 </span>
                               </div>
 
-                              <div className="chat-message-bubble">
-                                {message.message_content}
-                              </div>
+                              {message.message_content && (
+                                <div className="chat-message-bubble">
+                                  {message.message_content}
+                                </div>
+                              )}
+                              {message.attachments?.length > 0 && (
+                                <div className="chat-message-attachments">
+                                  {message.attachments.map(renderAttachment)}
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -523,14 +767,65 @@ useEffect(() => {
                 onSubmit={handleSendMessage}
               >
                 {error && (
-                  <div className="chat-error">
+                  <div className="chat-error" role="alert">
                     {error}
                   </div>
                 )}
 
+                {selectedFiles.length > 0 && (
+                  <div className="chat-pending-attachments" aria-label="Attachments to send">
+                    {selectedFiles.map((attachment) => (
+                      <div className="chat-pending-file" key={attachment.key}>
+                        {attachment.previewUrl ? (
+                          <img src={attachment.previewUrl} alt="" />
+                        ) : (
+                          <FontAwesomeIcon icon={faFile} />
+                        )}
+                        <span className="chat-pending-file-details">
+                          <strong>{attachment.file.name}</strong>
+                          <small>
+                            {formatFileSize(attachment.file.size)}
+                            {attachment.attachmentId ? ' · Uploaded' : ''}
+                          </small>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(attachment)}
+                          disabled={sending}
+                          aria-label={`Remove ${attachment.file.name}`}
+                        >
+                          <FontAwesomeIcon icon={faXmark} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  className="chat-file-input"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.xlsx,.pptx"
+                  multiple
+                  onChange={handleFilesSelected}
+                  aria-label="Choose up to 5 attachments, 10 MB each"
+                />
+
                 <div className="chat-input-wrapper">
+                  <button
+                    type="button"
+                    className="chat-attach-button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={sending || selectedFiles.length >= MAX_ATTACHMENTS}
+                    aria-label="Attach files"
+                    title="Attach up to 5 files (10 MB each)"
+                  >
+                    <FontAwesomeIcon icon={faPaperclip} />
+                  </button>
+
                   <textarea
                     value={messageInput}
+                    disabled={sending}
                     onChange={(event) =>
                       setMessageInput(event.target.value)
                     }
@@ -552,19 +847,19 @@ useEffect(() => {
                   <button
                     type="submit"
                     disabled={
-                      !messageInput.trim() ||
+                      (!messageInput.trim() && selectedFiles.length === 0) ||
                       sending ||
                       connectionStatus !== 'connected'
                     }
                     aria-label="Send message"
                   >
-                    <FontAwesomeIcon icon={faPaperPlane} />
+                    <FontAwesomeIcon icon={sending ? faSpinner : faPaperPlane} spin={sending} />
                   </button>
                 </div>
 
                 <div className="chat-composer-footer">
-                  <span>
-                    Press Enter to send · Shift + Enter for a new line
+                  <span role={uploadProgress ? 'status' : undefined} aria-live="polite">
+                    {uploadProgress || 'Enter to send · Shift + Enter for a new line'}
                   </span>
 
                   <span>

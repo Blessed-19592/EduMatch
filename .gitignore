@@ -12,6 +12,9 @@ server/node_modules/
 dist/
 build/
 
+# Private uploaded chat files
+server/storage/chat-attachments/
+
 # Logs
 *.log
 npm-debug.log*

@@ -8,6 +8,7 @@ import {
     getGroupChatHistory,
     saveGroupMessage
 } from '../services/chatService.js';
+import { MAX_CHAT_ATTACHMENTS_PER_MESSAGE } from '../utils/chatAttachmentValidation.js';
 
 const groupIdSchema = z.string().uuid();
 
@@ -19,8 +20,27 @@ const historySchema = z.object({
 
 const messageSchema = z.object({
     groupId: groupIdSchema,
-    messageContent: z.string().trim().min(1).max(5000)
-}).strict();
+    messageContent: z.string().trim().max(5000).default(''),
+    attachmentIds: z.array(groupIdSchema)
+        .max(MAX_CHAT_ATTACHMENTS_PER_MESSAGE)
+        .default([])
+}).strict().superRefine((message, context) => {
+    if (!message.messageContent && message.attachmentIds.length === 0) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['messageContent'],
+            message: 'Write a message or attach at least one file.'
+        });
+    }
+
+    if (new Set(message.attachmentIds).size !== message.attachmentIds.length) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['attachmentIds'],
+            message: 'An attachment cannot be added more than once.'
+        });
+    }
+});
 
 
 // ======================================
@@ -302,9 +322,16 @@ export const configureSocketServer = (
                         error
                     );
 
+                    const isClientError =
+                        Number.isInteger(error.statusCode) &&
+                        error.statusCode >= 400 &&
+                        error.statusCode < 500;
+
                     acknowledge?.({
                         status: 'error',
-                        message: 'Unable to complete this operation.'
+                        message: isClientError
+                            ? error.message
+                            : 'Unable to complete this operation.'
                     });
                 }
             });
@@ -386,7 +413,8 @@ handleAuthorizedEvent(
                 const message = await saveGroupMessage(
                     validated.groupId,
                     currentUser.userId,
-                    validated.messageContent
+                    validated.messageContent,
+                    validated.attachmentIds
                 );
 
                 const broadcastMessage = {

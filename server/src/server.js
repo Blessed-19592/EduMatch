@@ -13,6 +13,7 @@ import { createServer } from 'node:http';
 
 import taskRoutes from './routes/taskRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
+import chatAttachmentRoutes from './routes/chatAttachmentRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
 import { configureSocketServer } from './sockets/socketServer.js';
@@ -336,6 +337,7 @@ app.use('/api', csrfProtection);
 app.use('/api/auth', authRoutes);
 
 app.use('/api/groups', groupRoutes);
+app.use('/api/groups', chatAttachmentRoutes);
 app.use('/api/group-invitations', groupInvitationRoutes);
 app.use('/api/groups', taskRoutes);
 app.use('/api/students', studentProfileRoutes);
