@@ -114,6 +114,7 @@ export const getStudentProfilePicture = async (studentId, requesterId) => {
     const result = await pool.query(
         `SELECT
             sp.profile_picture_storage_key,
+            sp.profile_review_status,
             COALESCE(us.profile_discoverable, TRUE) AS profile_discoverable
          FROM student_profiles sp
          JOIN users u ON u.user_id = sp.user_id
@@ -125,11 +126,15 @@ export const getStudentProfilePicture = async (studentId, requesterId) => {
     );
 
     const profile = result.rows[0];
+    const isOwner = String(studentId) === String(requesterId);
     if (
         !profile?.profile_picture_storage_key ||
         (
-            String(studentId) !== String(requesterId) &&
-            !profile.profile_discoverable
+            !isOwner &&
+            (
+                !profile.profile_discoverable ||
+                profile.profile_review_status !== 'approved'
+            )
         )
     ) {
         throw new AppError('Profile picture not found.', 404);

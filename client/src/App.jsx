@@ -1,5 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useMatch,
+  useNavigate,
+  useSearchParams
+} from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
@@ -9,6 +19,7 @@ import CompleteRegistrationPage from './pages/auth/CompleteRegistrationPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import ProfilePage from './pages/student/ProfilePage';
+import PublicStudentProfilePage from './pages/student/PublicStudentProfilePage';
 import DiscoverGroupsPage from './pages/student/DiscoverGroupsPage';
 import CreateGroupPage from './pages/student/CreateGroupPage';
 import MyGroupsPage from './pages/student/MyGroupsPage';
@@ -22,6 +33,7 @@ import './components/auth/Auth.css';
 import GroupInvitationsPage from './pages/student/GroupInvitationsPage';
 import MembershipRequestsInboxPage from './pages/student/MembershipRequestsInboxPage';
 import NotificationCenter from './components/NotificationCenter';
+import ImageAvatar from './components/ImageAvatar';
 import api, { getApiErrorMessage } from './api/api';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -93,7 +105,15 @@ const navigation = [
   },
 ];
 
-function Topbar({ activePage, sidebarOpen, onToggleSidebar, user, onLogout, onNavigate }) {
+function Topbar({
+  activePage,
+  sidebarOpen,
+  onToggleSidebar,
+  user,
+  profilePictureUrl,
+  onLogout,
+  onNavigate
+}) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   return (
@@ -148,7 +168,12 @@ function Topbar({ activePage, sidebarOpen, onToggleSidebar, user, onLogout, onNa
             onClick={() => setProfileOpen(!profileOpen)}
             aria-expanded={profileOpen}
           >
-            <div className="avatar">{(user?.fullName || 'Student').split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</div>
+            <ImageAvatar
+              src={profilePictureUrl}
+              name={user?.fullName || 'Student'}
+              colorKey={user?.userId}
+              className="avatar"
+            />
 
             <div className="profile-info">
               <strong>{user?.fullName || 'Student'}</strong>
@@ -585,11 +610,22 @@ function Dashboard({ onNavigate, user }) {
 
 function StudentWorkspace() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const publicProfileMatch = useMatch('/app/students/:studentId');
+  const publicStudentId = publicProfileMatch?.params.studentId;
   const [activePage, setActivePage] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsError, setSettingsError] = useState('');
+  const [profilePictureUrl, setProfilePictureUrl] = useState(null);
+  const profilePictureRevision = useRef(0);
+
+  const handleProfilePictureChange = useCallback((pictureUrl) => {
+    profilePictureRevision.current += 1;
+    setProfilePictureUrl(pictureUrl ?? null);
+  }, []);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -619,6 +655,25 @@ function StudentWorkspace() {
     loadSettings();
   }, [loadSettings]);
 
+  useEffect(() => {
+    let active = true;
+    const revisionAtRequest = profilePictureRevision.current;
+
+    api.get('/students/me/profile')
+      .then(({ data }) => {
+        if (active && profilePictureRevision.current === revisionAtRequest) {
+          setProfilePictureUrl(data?.data?.profile_picture_url ?? null);
+        }
+      })
+      .catch((error) => {
+        console.error('Unable to load the account profile picture:', error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const retrySettings = useCallback(() => {
     setSettingsLoading(true);
     setSettingsError('');
@@ -633,31 +688,53 @@ function StudentWorkspace() {
     }
   };
 
+  const displayedPage = publicStudentId ? 'Student Profile' : activePage;
+  const openStudentProfile = (studentId) => {
+    navigate(`/app/students/${encodeURIComponent(studentId)}`, {
+      state: { returnTo: location.pathname }
+    });
+  };
+  const closeStudentProfile = () => {
+    const returnTo = location.state?.returnTo;
+    const safeReturnTo = typeof returnTo === 'string' && returnTo.startsWith('/app')
+      ? returnTo
+      : '/app';
+    navigate(safeReturnTo, { replace: safeReturnTo === '/app' && !returnTo });
+  };
+
   return (
     <div className="app-layout">
       <Topbar
-        activePage={activePage}
+        activePage={displayedPage}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((open) => !open)}
         user={user}
+        profilePictureUrl={profilePictureUrl}
         onLogout={handleLogout}
         onNavigate={setActivePage}
       />
 
       <Sidebar
-        activePage={activePage}
+        activePage={displayedPage}
         setActivePage={setActivePage}
         open={sidebarOpen}
         closeSidebar={() => setSidebarOpen(false)}
       />
 
       <main className="main-area">
-    {activePage === 'Dashboard' ? (
+    {publicStudentId ? (
+        <PublicStudentProfilePage
+          key={publicStudentId}
+          studentId={publicStudentId}
+          onBack={closeStudentProfile}
+          currentUserId={user?.userId}
+        />
+    ) : activePage === 'Dashboard' ? (
         <Dashboard onNavigate={setActivePage} user={user} />
     ) : activePage === 'My Profile' ? (
-        <ProfilePage />
+        <ProfilePage onPictureChange={handleProfilePictureChange} />
     ) : activePage === 'Find Students' ? (
-        <FindStudentsPage />
+        <FindStudentsPage onViewProfile={openStudentProfile} />
     ) : activePage === 'Collaboration Requests' ? (
         <CollaborationRequestsPage />
     ) : activePage === 'Group Invitations' ? (
@@ -750,7 +827,7 @@ function AppRoutes() {
 
       {/* Student workspace */}
       <Route element={<ProtectedRoute allowedRoles={['student']} />}>
-        <Route path="/app" element={<StudentWorkspace />} />
+        <Route path="/app/*" element={<StudentWorkspace />} />
       </Route>
 
       {/* Administrator workspace */}

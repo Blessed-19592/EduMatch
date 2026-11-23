@@ -1,7 +1,14 @@
 import { useState } from 'react';
+import { getAvatarColor } from './avatarColor';
 import './ImageAvatar.css';
 
-export default function ImageAvatar({ src, name, className = '', fallback }) {
+export default function ImageAvatar({
+  src,
+  name,
+  colorKey,
+  className = '',
+  fallback
+}) {
   const [failedSource, setFailedSource] = useState('');
   const normalizedName = String(name || '').trim();
   const initials = normalizedName
@@ -16,6 +23,11 @@ export default function ImageAvatar({ src, name, className = '', fallback }) {
       className={`image-avatar ${className}`.trim()}
       role="img"
       aria-label={`${normalizedName || 'User'} picture`}
+      style={{
+        ...(colorKey
+          ? { backgroundColor: getAvatarColor(colorKey), color: '#fff' }
+          : {})
+      }}
     >
       {src && failedSource !== src
         ? <img src={src} alt="" onError={() => setFailedSource(src)} />

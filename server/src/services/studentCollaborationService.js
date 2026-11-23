@@ -1,5 +1,6 @@
 import pool from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
+import { canViewPublicStudentProfile } from '../utils/publicProfileSerializer.js';
 
 // Send a direct collaboration request.
 export const sendStudentCollaborationRequest = async (
@@ -18,17 +19,34 @@ export const sendStudentCollaborationRequest = async (
 
         // Both participants must be active students.
         const participants = await client.query(
-            `SELECT u.user_id
+            `SELECT
+                u.user_id,
+                sp.profile_review_status,
+                COALESCE(us.profile_discoverable, TRUE) AS profile_discoverable
              FROM users u
              JOIN student_profiles sp ON sp.user_id = u.user_id
+             LEFT JOIN user_settings us ON us.user_id = u.user_id
              WHERE u.user_id = ANY($1::uuid[])
                AND u.role = 'student'
                AND u.account_status = 'active'
-             FOR SHARE OF u`,
+             FOR SHARE OF u, sp`,
             [[senderId, recipientId]]
         );
 
         if (participants.rows.length !== 2) {
+            throw new AppError(
+                'The student account could not be found or is inactive.',
+                404
+            );
+        }
+
+        const recipient = participants.rows.find(
+            participant => String(participant.user_id) === String(recipientId)
+        );
+        if (!canViewPublicStudentProfile(
+            recipient,
+            recipient?.profile_discoverable
+        )) {
             throw new AppError(
                 'The student account could not be found or is inactive.',
                 404

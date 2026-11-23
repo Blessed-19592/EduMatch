@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUsers } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faUsers } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
 import ImageAvatar from '../../components/ImageAvatar';
 import MembershipRequestsPage from './MembershipRequestsPage';
@@ -172,12 +172,30 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
       <button type="button" className="gd-back" onClick={onBack}>Back to My Groups</button>
 
       <header className="gd-hero">
-        <ImageAvatar
-          src={group.group_picture_url}
-          name={group.group_name}
-          className="gd-hero-icon"
-          fallback={<FontAwesomeIcon icon={faUsers} />}
-        />
+        <div className="gd-picture-avatar-wrap">
+          <ImageAvatar
+            src={group.group_picture_url}
+            name={group.group_name}
+            className="gd-hero-icon"
+            fallback={<FontAwesomeIcon icon={faUsers} />}
+          />
+          {isOwner && (
+            <button
+              type="button"
+              className="gd-picture-add-button"
+              aria-label={pictureUploading
+                ? 'Uploading group picture'
+                : group.group_picture_url
+                  ? 'Change group picture'
+                  : 'Add group picture'}
+              title={group.group_picture_url ? 'Change group picture' : 'Add group picture'}
+              disabled={pictureUploading}
+              onClick={() => pictureInput.current?.click()}
+            >
+              <FontAwesomeIcon icon={faPlus} aria-hidden="true" />
+            </button>
+          )}
+        </div>
         <div className="gd-hero-copy">
           <span className="gd-eyebrow">GROUP OVERVIEW</span>
           <h1>{group.group_name}</h1>
@@ -199,18 +217,6 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
               disabled={pictureUploading}
               onChange={uploadPicture}
             />
-            <button
-              type="button"
-              className="gd-picture-button"
-              disabled={pictureUploading}
-              onClick={() => pictureInput.current?.click()}
-            >
-              {pictureUploading
-                ? 'Uploading…'
-                : group.group_picture_url
-                  ? 'Change group picture'
-                  : 'Add group picture'}
-            </button>
             <small>JPG, PNG, or WebP. Maximum file size: 5 MB.</small>
           </div>
         )}

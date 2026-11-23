@@ -161,6 +161,13 @@
   margin-bottom: 20px;
 }
 
+.profile-picture-avatar-wrap {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  flex: 0 0 84px;
+}
+
 .profile-picture-avatar {
   width: 84px;
   height: 84px;
@@ -171,6 +178,37 @@
   color: #315d9f;
   font-size: 25px;
   font-weight: 700;
+}
+
+.profile-picture-add-button {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #2869aa;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(22 46 77 / 20%);
+}
+
+.profile-picture-add-button:hover:not(:disabled) {
+  background: #1d568f;
+}
+
+.profile-picture-add-button:focus-visible {
+  outline: 3px solid #8cb6e6;
+  outline-offset: 2px;
+}
+
+.profile-picture-add-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .profile-picture-actions {

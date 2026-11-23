@@ -8,6 +8,10 @@ import {
     getStudentInterests,
     getStudentIntentions
 } from './skillInterestService.js';
+import {
+    canViewPublicStudentProfile,
+    serializePublicStudentProfile
+} from '../utils/publicProfileSerializer.js';
 
 export const getPublicStudentProfile = async (studentId) => {
     const visibilityResult = await pool.query(
@@ -19,15 +23,16 @@ export const getPublicStudentProfile = async (studentId) => {
         [studentId]
     );
 
-    if (!visibilityResult.rows[0]?.profile_discoverable) {
-        throw new AppError('Student profile not found.', 404);
-    }
-
     // Retrieve the existing profile internally.
     // Sensitive fields will never be included in the response.
     const profile = await getStudentProfile(studentId);
 
-    
+    if (!canViewPublicStudentProfile(
+        profile,
+        visibilityResult.rows[0]?.profile_discoverable
+    )) {
+        throw new AppError('Student profile not found.', 404);
+    }
 
     // Retrieve the student's skills, interests and intentions.
     const [
@@ -47,26 +52,7 @@ export const getPublicStudentProfile = async (studentId) => {
                 p.evidence_type,
                 p.evidence_url,
                 p.repository_url,
-                p.live_demo_url,
-                p.created_at,
-
-                COALESCE(
-                    (
-                        SELECT jsonb_agg(
-                            jsonb_build_object(
-                                'title', ae.title,
-                                'description', ae.description,
-                                'evidenceType', ae.evidence_type,
-                                'evidenceUrl', ae.evidence_url,
-                                'createdAt', ae.created_at
-                            )
-                            ORDER BY ae.created_at DESC
-                        )
-                        FROM assessment_evidence ae
-                        WHERE ae.portfolio_id = p.portfolio_id
-                    ),
-                    '[]'::jsonb
-                ) AS evidence
+                p.live_demo_url
 
              FROM portfolios p
 
@@ -77,50 +63,11 @@ export const getPublicStudentProfile = async (studentId) => {
         )
     ]);
 
-    // Explicitly whitelist information other students may see.
-    return {
-        fullName: profile.full_name,
-        profilePictureUrl: profile.profile_picture_url,
-        bio: profile.bio,
-
-        institution: profile.institution_name,
-        faculty: profile.faculty_name,
-        department: profile.department_name,
-        course: profile.course_name,
-        yearOfStudy: profile.year_of_study,
-
-        collaborationStatus: profile.collaboration_status,
-        availabilityHoursPerWeek: profile.availability_hours_per_week,
-        preferredMeetingMode: profile.preferred_meeting_mode,
-        preferredMeetingTimes: profile.preferred_meeting_times,
-        commitmentLevel: profile.commitment_level,
-
-        skills: skills.map(skill => ({
-            skillName: skill.skill_name,
-            category: skill.category,
-            proficiencyLevel: skill.proficiency_level
-        })),
-
-        interests: interests.map(interest => ({
-            interestName: interest.interest_name,
-            category: interest.interest_category
-        })),
-
-        collaborationIntentions: intentions.map(intention => ({
-            intentionCode: intention.intention_code,
-            intentionName: intention.intention_name,
-            description: intention.description
-        })),
-
-        portfolios: portfoliosResult.rows.map(portfolio => ({
-    title: portfolio.title,
-    description: portfolio.description,
-    evidenceType: portfolio.evidence_type,
-    evidenceUrl: portfolio.evidence_url,
-    repositoryUrl: portfolio.repository_url,
-    liveDemoUrl: portfolio.live_demo_url,
-    createdAt: portfolio.created_at,
-    evidence: portfolio.evidence
-}))
-    };
+    return serializePublicStudentProfile({
+        profile,
+        skills,
+        interests,
+        intentions,
+        portfolios: portfoliosResult.rows
+    });
 };

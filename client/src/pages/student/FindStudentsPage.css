@@ -130,9 +130,49 @@
   border-radius: 50%;
 }
 
+.find-student-avatar-button {
+  display: block;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.find-student-avatar-button:focus-visible {
+  outline: 3px solid #8cb6e6;
+  outline-offset: 3px;
+}
+
 .find-student-identity {
   flex: 1;
   min-width: 0;
+}
+
+.find-student-profile-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.find-student-profile-link:hover {
+  color: #2869aa;
+  text-decoration: underline;
+}
+
+.find-student-profile-link:focus-visible {
+  border-radius: 3px;
+  outline: 3px solid #8cb6e6;
+  outline-offset: 3px;
 }
 
 .find-student-identity h3 {

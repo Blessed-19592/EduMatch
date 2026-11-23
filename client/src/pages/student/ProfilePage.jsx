@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
 import ImageAvatar from '../../components/ImageAvatar';
 import './ProfilePage.css';
@@ -73,7 +75,7 @@ function ChoiceChips({ options, value, onChange, multiple = false, disabled = fa
   );
 }
 
-export default function ProfilePage() {
+export default function ProfilePage({ onPictureChange }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState('');
   const [error, setError] = useState('');
@@ -206,10 +208,12 @@ export default function ProfilePage() {
         throw new Error('The server did not confirm the uploaded picture.');
       }
 
+      const pictureUrlWithCacheKey = `${pictureUrl}?v=${Date.now()}`;
       setProfile(current => ({
         ...current,
-        profile_picture_url: `${pictureUrl}?v=${Date.now()}`,
+        profile_picture_url: pictureUrlWithCacheKey,
       }));
+      onPictureChange?.(pictureUrlWithCacheKey);
       setSaveFeedback({
         type: 'success',
         message: 'Profile picture updated successfully.',
@@ -334,24 +338,29 @@ export default function ProfilePage() {
       <section className="profile-card">
         <SectionHeading title="Personal & academic information" description="Your academic identity comes from the university student registry." />
         <div className="profile-picture-control">
-          <ImageAvatar
-            src={profile?.profile_picture_url}
-            name={profile?.full_name}
-            className="profile-picture-avatar"
-          />
-          <div className="profile-picture-actions">
+          <div className="profile-picture-avatar-wrap">
+            <ImageAvatar
+              src={profile?.profile_picture_url}
+              name={profile?.full_name}
+              colorKey={profile?.user_id}
+              className="profile-picture-avatar"
+            />
             <button
               type="button"
-              className="profile-expand-button"
-              disabled={locked || !!saving || pictureUploading}
-              onClick={() => profilePictureInput.current?.click()}
-            >
-              {pictureUploading
-                ? 'Uploading picture…'
+              className="profile-picture-add-button"
+              aria-label={pictureUploading
+                ? 'Uploading profile picture'
                 : profile?.profile_picture_url
                   ? 'Change profile picture'
                   : 'Add profile picture'}
+              title={profile?.profile_picture_url ? 'Change profile picture' : 'Add profile picture'}
+              disabled={locked || !!saving || pictureUploading}
+              onClick={() => profilePictureInput.current?.click()}
+            >
+              <FontAwesomeIcon icon={faPlus} aria-hidden="true" />
             </button>
+          </div>
+          <div className="profile-picture-actions">
             <input
               ref={profilePictureInput}
               className="profile-picture-input"

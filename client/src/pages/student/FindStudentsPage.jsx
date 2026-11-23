@@ -7,7 +7,6 @@ import {
   Users,
   GraduationCap,
   Building2,
-  UserRound,
   AlertCircle,
   Send,
   X,
@@ -33,6 +32,7 @@ function MatchCard({
   activeRequest,
   onOpenRequest,
   onCloseRequest,
+  onViewProfile,
   message,
   onMessageChange,
   onSubmitRequest,
@@ -43,15 +43,30 @@ function MatchCard({
   return (
     <article className="content-card find-student-card">
       <div className="find-student-card-top">
-        <ImageAvatar
-          src={student.profilePictureUrl}
-          name={student.fullName}
-          className="find-student-avatar"
-          fallback={<UserRound size={25} />}
-        />
+        <button
+          type="button"
+          className="find-student-avatar-button"
+          aria-label={`View ${student.fullName}'s profile`}
+          onClick={() => onViewProfile(student.studentId)}
+        >
+          <ImageAvatar
+            src={student.profilePictureUrl}
+            name={student.fullName}
+            colorKey={student.studentId}
+            className="find-student-avatar"
+          />
+        </button>
 
         <div className="find-student-identity">
-          <h3>{student.fullName}</h3>
+          <h3>
+            <button
+              type="button"
+              className="find-student-profile-link"
+              onClick={() => onViewProfile(student.studentId)}
+            >
+              {student.fullName}
+            </button>
+          </h3>
           <span>
             {student.yearOfStudy
               ? `Year ${student.yearOfStudy}`
@@ -191,7 +206,7 @@ function MatchCard({
   );
 }
 
-export default function FindStudentsPage() {
+export default function FindStudentsPage({ onViewProfile }) {
   const [students, setStudents] = useState([]);
   const [selectedYears, setSelectedYears] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -453,6 +468,7 @@ export default function FindStudentsPage() {
               student={student}
               onOpenRequest={openRequestForm}
               onCloseRequest={closeRequestForm}
+              onViewProfile={onViewProfile}
               activeRequest={activeRequest}
               message={message}
               onMessageChange={setMessage}
