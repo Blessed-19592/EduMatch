@@ -1,6 +1,7 @@
 import './FindStudentsPage.css';
 import { useCallback, useEffect, useState } from 'react';
 import api from '../../api/api';
+import ImageAvatar from '../../components/ImageAvatar';
 import {
   RefreshCw,
   Users,
@@ -42,9 +43,12 @@ function MatchCard({
   return (
     <article className="content-card find-student-card">
       <div className="find-student-card-top">
-        <div className="find-student-avatar">
-          <UserRound size={25} />
-        </div>
+        <ImageAvatar
+          src={student.profilePictureUrl}
+          name={student.fullName}
+          className="find-student-avatar"
+          fallback={<UserRound size={25} />}
+        />
 
         <div className="find-student-identity">
           <h3>{student.fullName}</h3>

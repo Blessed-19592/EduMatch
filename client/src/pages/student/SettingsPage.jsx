@@ -1,10 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBell,
   faEye,
-  faMoon,
-  faSun,
   faUser,
 } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
@@ -55,13 +53,19 @@ export default function SettingsPage({
   loading,
   error: loadError,
   onNavigate,
-  onThemeChange,
   onSettingsChange,
   onRetry,
 }) {
   const [savingKey, setSavingKey] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    if (!notice) return undefined;
+
+    const timeoutId = window.setTimeout(() => setNotice(''), 3500);
+    return () => window.clearTimeout(timeoutId);
+  }, [notice]);
 
   async function saveSetting(key, value) {
     if (!settings) return;
@@ -81,8 +85,7 @@ export default function SettingsPage({
       }
 
       onSettingsChange(savedSettings);
-      if (key === 'theme') onThemeChange(savedSettings.theme);
-      setNotice('Setting saved.');
+      setNotice('Setting saved successfully.');
     } catch (requestError) {
       onSettingsChange({ ...settings, [key]: previousValue });
       setError(getApiErrorMessage(requestError, 'Could not save this setting.'));
@@ -97,7 +100,7 @@ export default function SettingsPage({
     <div className="settings-page">
       <header className="settings-heading">
         <h1>Settings</h1>
-        <p>Manage your account preferences, privacy, notifications, and appearance.</p>
+        <p>Manage your account preferences, privacy, and notifications.</p>
       </header>
 
       {error && <div className="settings-feedback error" role="alert">{error}</div>}
@@ -198,34 +201,6 @@ export default function SettingsPage({
                     onChange={(value) => saveSetting(option.key, value)}
                   />
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="settings-card">
-            <div className="settings-card-heading">
-              <span className="settings-card-icon">
-                <FontAwesomeIcon icon={settings.theme === 'dark' ? faMoon : faSun} />
-              </span>
-              <div>
-                <h2>Appearance</h2>
-                <p>Choose the color theme used across EduMatch.</p>
-              </div>
-            </div>
-
-            <div className="settings-theme-options" role="group" aria-label="Color theme">
-              {['light', 'dark'].map((theme) => (
-                <button
-                  type="button"
-                  className={`settings-theme-option ${settings.theme === theme ? 'selected' : ''}`}
-                  key={theme}
-                  aria-pressed={settings.theme === theme}
-                  disabled={controlsDisabled}
-                  onClick={() => saveSetting('theme', theme)}
-                >
-                  <FontAwesomeIcon icon={theme === 'dark' ? faMoon : faSun} />
-                  <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
-                </button>
               ))}
             </div>
           </section>

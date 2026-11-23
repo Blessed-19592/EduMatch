@@ -1,8 +1,11 @@
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 
 import { requireStudent } from '../middleware/requireRole.js';
+import { parsePictureUpload } from '../middleware/parsePictureUpload.js';
+import { AppError } from '../utils/AppError.js';
 
 
 import {
@@ -17,6 +20,10 @@ import {
     getMyGroups
 } from '../services/groupService.js';
 import {
+    getGroupPicture,
+    uploadGroupPicture
+} from '../services/groupPictureService.js';
+import {
     getEligibleCollaborators,
     sendGroupInvitation
 } from '../services/groupInvitationService.js';
@@ -24,6 +31,21 @@ import {
 const router = express.Router();
 
 const uuidSchema = z.string().uuid();
+const pictureMetadataSchema = z.object({
+    name: z.string().trim().min(1).max(255),
+    type: z.string().trim().max(100).optional()
+}).strict();
+const groupPictureUploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    keyGenerator: req => String(req.currentUser.userId),
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+        status: 'error',
+        message: 'Too many picture uploads. Please wait before trying again.'
+    }
+});
 
 const academicYearSchema = z.number().int().min(1).max(4);
 const sendInvitationSchema = z.object({
@@ -143,6 +165,74 @@ const memberYearsSchema = z.preprocess(value => {
 }, z.array(academicYearSchema).max(4))
 
 .transform(years => [...new Set(years)]);
+
+router.post(
+    '/:groupId/picture',
+    requireStudent,
+    groupPictureUploadLimiter,
+    parsePictureUpload,
+    async (req, res, next) => {
+        try {
+            const groupValidation = uuidSchema.safeParse(req.params.groupId);
+            const metadataValidation = pictureMetadataSchema.safeParse(req.query);
+
+            if (!groupValidation.success || !metadataValidation.success) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Invalid group picture upload information.'
+                });
+            }
+
+            if (!Buffer.isBuffer(req.body)) {
+                throw new AppError('Upload the image as binary data.', 400);
+            }
+
+            const picture = await uploadGroupPicture(
+                groupValidation.data,
+                req.currentUser.userId,
+                req.body,
+                metadataValidation.data.name,
+                metadataValidation.data.type
+            );
+
+            return res.status(200).json({
+                status: 'success',
+                message: 'Group picture uploaded successfully.',
+                data: picture
+            });
+        } catch (error) {
+            return next(error);
+        }
+    }
+);
+
+router.get('/:groupId/picture', requireStudent, async (req, res, next) => {
+    try {
+        const validation = uuidSchema.safeParse(req.params.groupId);
+
+        if (!validation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid group ID.'
+            });
+        }
+
+        const picture = await getGroupPicture(validation.data);
+
+        res.set({
+            'Cache-Control': 'private, no-store',
+            'Content-Type': picture.mimeType,
+            'Content-Disposition': 'inline',
+            'X-Content-Type-Options': 'nosniff'
+        });
+
+        return res.sendFile(picture.filePath, error => {
+            if (error) next(error);
+        });
+    } catch (error) {
+        return next(error);
+    }
+});
 
 
 // ======================================

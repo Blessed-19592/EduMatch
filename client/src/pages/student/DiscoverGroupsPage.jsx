@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faMagnifyingGlass, faLocationDot, faUserGroup, faArrowLeft, faPaperPlane, faXmark, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
+import ImageAvatar from '../../components/ImageAvatar';
 import './DiscoverGroupsPage.css';
 
 const SCOPES = [
@@ -112,7 +113,15 @@ export default function DiscoverGroupsPage() {
           const full = count >= max;
           return <article className="discover-group-card" key={group.group_id}>
             <div className="discover-card-top"><span className="discover-intention">{intentionLabel(group)}</span><span className="discover-open">Open</span></div>
-            <h2>{group.group_name}</h2>
+            <div className="discover-group-heading">
+              <ImageAvatar
+                src={group.group_picture_url}
+                name={group.group_name}
+                className="discover-group-avatar"
+                fallback={<FontAwesomeIcon icon={faUsers} />}
+              />
+              <h2>{group.group_name}</h2>
+            </div>
             <p className="discover-card-description">{group.description || group.objectives || 'This group has not added a short description yet.'}</p>
             <div className="discover-card-meta"><span><FontAwesomeIcon icon={faUserGroup} /> {count}/{max} members</span><span>By {group.creator_name || 'Student'}</span></div>
             <div className="discover-card-location">{[group.course_name, group.department_name, group.faculty_name].filter(Boolean).join(' · ') || 'Kisii University'}</div>
@@ -128,7 +137,16 @@ export default function DiscoverGroupsPage() {
           {detailLoading || selectedGroup.loading ? <div className="discover-loading"><FontAwesomeIcon icon={faSpinner} spin /> Loading group details...</div> : <>
             <button className="discover-back-link" type="button" onClick={closeDetails}><FontAwesomeIcon icon={faArrowLeft} /> Back to groups</button>
             <span className="discover-intention">{intentionLabel(selectedGroup)}</span>
-            <h2>{selectedGroup.group_name}</h2><p className="discover-modal-byline">Created by {selectedGroup.creator_name || 'Student'} · {selectedGroup.current_members || 0} of {selectedGroup.max_members} members</p>
+            <div className="discover-modal-group-heading">
+              <ImageAvatar
+                src={selectedGroup.group_picture_url}
+                name={selectedGroup.group_name}
+                className="discover-modal-avatar"
+                fallback={<FontAwesomeIcon icon={faUsers} />}
+              />
+              <h2>{selectedGroup.group_name}</h2>
+            </div>
+            <p className="discover-modal-byline">Created by {selectedGroup.creator_name || 'Student'} · {selectedGroup.current_members || 0} of {selectedGroup.max_members} members</p>
             {selectedGroup.description && <p>{selectedGroup.description}</p>}
             <div className="discover-detail-block"><h3>Objectives</h3><p>{selectedGroup.objectives || 'Not provided.'}</p></div>
             <div className="discover-detail-block"><h3>Expected deliverables</h3><p>{selectedGroup.expected_deliverables || 'Not provided.'}</p></div>

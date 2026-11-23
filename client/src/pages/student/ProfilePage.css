@@ -130,6 +130,10 @@
     align-items: flex-start;
   }
 
+  .profile-picture-control {
+    align-items: flex-start;
+  }
+
   .profile-page-header h1 {
     font-size: 27px;
   }
@@ -148,6 +152,40 @@
 .profile-page {
   color: #111111;
   font-size: 15px;
+}
+
+.profile-picture-control {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.profile-picture-avatar {
+  width: 84px;
+  height: 84px;
+  flex: 0 0 84px;
+  border: 1px solid #dfe5ed;
+  border-radius: 50%;
+  background: #eaf1fb;
+  color: #315d9f;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.profile-picture-actions {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+
+.profile-picture-input {
+  display: none;
+}
+
+.profile-picture-actions small {
+  color: #657386;
+  font-size: 12px;
 }
 
 .profile-page-header p {

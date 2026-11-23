@@ -2,6 +2,15 @@
 import { AppError } from '../utils/AppError.js';
 import pool from '../config/database.js';
 
+const presentGroup = ({
+    group_picture_storage_key: pictureStorageKey,
+    ...group
+}) => ({
+    ...group,
+    group_picture_url: pictureStorageKey
+        ? `/api/groups/${encodeURIComponent(group.group_id)}/picture`
+        : null
+});
 
 // Create a new collaboration group.
 export const createGroup = async (userId, groupData) => {
@@ -156,7 +165,7 @@ export const createGroup = async (userId, groupData) => {
         // Migration 010 automatically creates the owner's membership.
         await client.query('COMMIT');
 
-        return group;
+        return presentGroup(group);
 
     } catch (error) {
         await client.query('ROLLBACK').catch(() => {});
@@ -545,6 +554,7 @@ export const discoverGroups = async (
         `SELECT
             sg.group_id,
             sg.group_name,
+            sg.group_picture_storage_key,
             sg.description,
             sg.max_members,
             sg.group_status,
@@ -712,7 +722,7 @@ export const discoverGroups = async (
         [studentId, scope, uniqueMemberYears]
     );
 
-    return result.rows;
+    return result.rows.map(presentGroup);
 };
 // Retrieve details of a specific group.
 export const getGroupDetails = async (groupId, studentId) => {
@@ -799,7 +809,7 @@ export const getGroupDetails = async (groupId, studentId) => {
         throw new AppError('Group not found.', 404);
     }
 
-    return result.rows[0];
+    return presentGroup(result.rows[0]);
 };
 
 // Allow an active non-owner member to leave a group.
@@ -892,6 +902,7 @@ export const getMyGroups = async (studentId) => {
         `SELECT
             sg.group_id,
             sg.group_name,
+            sg.group_picture_storage_key,
             sg.description,
             sg.max_members,
             sg.group_status,
@@ -967,6 +978,6 @@ export const getMyGroups = async (studentId) => {
         [studentId]
     );
 
-    return result.rows;
+    return result.rows.map(presentGroup);
 };
 

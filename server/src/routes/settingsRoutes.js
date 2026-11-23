@@ -10,7 +10,6 @@ import {
 const router = express.Router();
 
 const settingsSchema = z.object({
-    theme: z.enum(['light', 'dark']).optional(),
     profileDiscoverable: z.boolean().optional(),
     notifyCollaborationRequests: z.boolean().optional(),
     notifyGroupInvitations: z.boolean().optional(),

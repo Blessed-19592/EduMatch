@@ -107,10 +107,10 @@
 .settings-secondary-button {
   min-height: 42px;
   padding: 0 15px;
-  border: 1px solid #d5e0ed;
+  border: 1px solid #4ade80;
   border-radius: 9px;
-  background: #f4f7fc;
-  color: var(--primary);
+  background: #4ade80;
+  color: #111111;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -119,8 +119,8 @@
 }
 
 .settings-secondary-button:hover {
-  border-color: #b7cbea;
-  background: #eaf1fb;
+  border-color: #22c55e;
+  background: #22c55e;
 }
 
 .settings-option-row {
@@ -183,44 +183,9 @@
   transform: translateX(20px);
 }
 
-.settings-toggle:disabled,
-.settings-theme-option:disabled {
+.settings-toggle:disabled {
   cursor: wait;
   opacity: 0.65;
-}
-
-.settings-theme-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.settings-theme-option {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-width: 120px;
-  min-height: 43px;
-  padding: 0 14px;
-  border: 1px solid #d7e0eb;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #111111;
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease;
-}
-
-.settings-theme-option.selected {
-  border-color: #9ab8dc;
-  background: #edf3fd;
-  color: #1d568d;
-}
-
-.settings-theme-option:hover:not(:disabled) {
-  border-color: #9ab8dc;
 }
 
 .settings-feedback {
@@ -312,11 +277,6 @@
 
   .settings-option-row p {
     font-size: 12px;
-  }
-
-  .settings-theme-option {
-    flex: 1;
-    min-width: 0;
   }
 
   .settings-secondary-button {

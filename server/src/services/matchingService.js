@@ -1,4 +1,5 @@
 import pool from '../config/database.js';
+import { getProfilePictureUrl } from '../utils/profilePictureUrl.js';
 
 const STUDENT_WEIGHTS = {
     intentions: 20,
@@ -183,6 +184,8 @@ const getStudentCandidates = async (studentId, years = []) => {
         `SELECT
             u.user_id AS "studentId",
             u.full_name AS "fullName",
+            sp.profile_picture_url AS "profilePictureUrl",
+            sp.profile_picture_storage_key AS "profilePictureStorageKey",
 
             sp.collaboration_status AS "collaborationStatus",
             sp.availability_hours_per_week AS "availabilityHours",
@@ -591,6 +594,11 @@ export const getStudentMatches = async (
         return {
             studentId: candidate.studentId,
             fullName: candidate.fullName,
+            profilePictureUrl: getProfilePictureUrl(
+                candidate.studentId,
+                candidate.profilePictureStorageKey,
+                candidate.profilePictureUrl
+            ),
 
             yearOfStudy: candidate.yearOfStudy,
 

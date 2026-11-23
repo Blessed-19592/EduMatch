@@ -15,6 +15,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import api, { getApiErrorMessage } from '../../api/api';
+import ImageAvatar from '../../components/ImageAvatar';
 import { useAuth } from '../../context/AuthContext';
 import './MessagesPage.css';
 
@@ -603,9 +604,12 @@ function MessagesPage() {
                   disabled={sending}
                   aria-current={selectedGroup?.group_id === group.group_id ? 'true' : undefined}
                 >
-                  <div className="conversation-avatar">
-                    <FontAwesomeIcon icon={faUsers} />
-                  </div>
+                  <ImageAvatar
+                    src={group.group_picture_url}
+                    name={group.group_name}
+                    className="conversation-avatar"
+                    fallback={<FontAwesomeIcon icon={faUsers} />}
+                  />
 
                   <div className="conversation-details">
                     <h3>{group.group_name}</h3>
@@ -656,9 +660,12 @@ function MessagesPage() {
                   <FontAwesomeIcon icon={faArrowLeft} />
                 </button>
 
-                <div className="chat-group-avatar">
-                  <FontAwesomeIcon icon={faUsers} />
-                </div>
+                <ImageAvatar
+                  src={selectedGroup.group_picture_url}
+                  name={selectedGroup.group_name}
+                  className="chat-group-avatar"
+                  fallback={<FontAwesomeIcon icon={faUsers} />}
+                />
 
                 <div className="chat-group-info">
                   <h2>{selectedGroup.group_name}</h2>

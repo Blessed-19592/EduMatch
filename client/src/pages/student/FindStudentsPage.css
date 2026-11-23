@@ -126,6 +126,10 @@
   color: #2563eb;
 }
 
+.find-student-avatar {
+  border-radius: 50%;
+}
+
 .find-student-identity {
   flex: 1;
   min-width: 0;

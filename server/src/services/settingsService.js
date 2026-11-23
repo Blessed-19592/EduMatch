@@ -2,7 +2,6 @@ import pool from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 
 const settingColumns = {
-    theme: 'theme',
     profileDiscoverable: 'profile_discoverable',
     notifyCollaborationRequests: 'notify_collaboration_requests',
     notifyGroupInvitations: 'notify_group_invitations',
@@ -11,7 +10,6 @@ const settingColumns = {
 };
 
 const toSettings = (row) => ({
-    theme: row.theme,
     profileDiscoverable: row.profile_discoverable,
     notifyCollaborationRequests: row.notify_collaboration_requests,
     notifyGroupInvitations: row.notify_group_invitations,
@@ -29,7 +27,6 @@ export const getUserSettings = async (userId) => {
 
     const result = await pool.query(
         `SELECT
-            theme,
             profile_discoverable,
             notify_collaboration_requests,
             notify_group_invitations,
@@ -71,7 +68,6 @@ export const updateUserSettings = async (userId, settings) => {
          ON CONFLICT (user_id)
          DO UPDATE SET ${updates}
          RETURNING
-            theme,
             profile_discoverable,
             notify_collaboration_requests,
             notify_group_invitations,

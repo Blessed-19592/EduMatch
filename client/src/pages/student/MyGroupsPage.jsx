@@ -5,6 +5,7 @@ import {
   faCircleCheck, faClock, faChevronDown, faChevronUp,
 } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
+import ImageAvatar from '../../components/ImageAvatar';
 import GroupDetailsPage from './GroupDetailsPage';
 import './MyGroupsPage.css';
 
@@ -54,7 +55,12 @@ function GroupCard({ group, expanded, onToggle, onViewDetails }) {
       </div>
 
       <div className="mg-card-title-row">
-        <div className="mg-card-symbol"><FontAwesomeIcon icon={faUsers} /></div>
+        <ImageAvatar
+          src={group.group_picture_url}
+          name={group.group_name}
+          className="mg-card-symbol"
+          fallback={<FontAwesomeIcon icon={faUsers} />}
+        />
         <div className="mg-card-title">
           <h2>{group.group_name}</h2>
           <p>{group.intention_name || 'Collaboration group'}</p>

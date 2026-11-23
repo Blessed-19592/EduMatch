@@ -1,13 +1,20 @@
 import { getPublicStudentProfile } from '../services/publicProfileService.js';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 
 import { requireStudent } from '../middleware/requireRole.js';
+import { parsePictureUpload } from '../middleware/parsePictureUpload.js';
 
 import {
     getStudentProfile,
     updateStudentProfile
 } from '../services/profileService.js';
+import {
+    getStudentProfilePicture,
+    uploadStudentProfilePicture
+} from '../services/profilePictureService.js';
+import { AppError } from '../utils/AppError.js';
 
 import {
     getStudentPartnerPreferences,
@@ -15,6 +22,22 @@ import {
 } from '../services/skillInterestService.js';
 
 const router = express.Router();
+const uuidSchema = z.string().uuid();
+const pictureMetadataSchema = z.object({
+    name: z.string().trim().min(1).max(255),
+    type: z.string().trim().max(100).optional()
+}).strict();
+const profilePictureUploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    keyGenerator: req => String(req.currentUser.userId),
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+        status: 'error',
+        message: 'Too many picture uploads. Please wait before trying again.'
+    }
+});
 
 
 // All routes require an active student account.
@@ -154,6 +177,67 @@ router.get('/me/profile', async (req, res, next) => {
 
     }
 
+});
+
+router.post(
+    '/me/profile-picture',
+    profilePictureUploadLimiter,
+    parsePictureUpload,
+    async (req, res, next) => {
+        try {
+            const metadata = pictureMetadataSchema.parse(req.query);
+
+            if (!Buffer.isBuffer(req.body)) {
+                throw new AppError('Upload the image as binary data.', 400);
+            }
+
+            const picture = await uploadStudentProfilePicture(
+                req.currentUser.userId,
+                req.body,
+                metadata.name,
+                metadata.type
+            );
+
+            return res.status(200).json({
+                status: 'success',
+                message: 'Profile picture uploaded successfully.',
+                data: picture
+            });
+        } catch (error) {
+            return next(error);
+        }
+    }
+);
+
+router.get('/:studentId/profile-picture', async (req, res, next) => {
+    try {
+        const validation = uuidSchema.safeParse(req.params.studentId);
+
+        if (!validation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid student profile ID.'
+            });
+        }
+
+        const picture = await getStudentProfilePicture(
+            validation.data,
+            req.currentUser.userId
+        );
+
+        res.set({
+            'Cache-Control': 'private, no-store',
+            'Content-Type': picture.mimeType,
+            'Content-Disposition': 'inline',
+            'X-Content-Type-Options': 'nosniff'
+        });
+
+        return res.sendFile(picture.filePath, error => {
+            if (error) next(error);
+        });
+    } catch (error) {
+        return next(error);
+    }
 });
 
 // ======================================

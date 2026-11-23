@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import api, { getApiErrorMessage } from '../../api/api';
+import ImageAvatar from '../../components/ImageAvatar';
 import './ProfilePage.css';
 
 const AVAILABILITY = ['Weekdays', 'Weekends', 'Evenings', 'Flexible'];
@@ -89,6 +90,8 @@ export default function ProfilePage() {
   const [preferences, setPreferences] = useState(EMPTY_PREFERENCES);
   const [skillSearch, setSkillSearch] = useState('');
   const [interestSearch, setInterestSearch] = useState('');
+  const [pictureUploading, setPictureUploading] = useState(false);
+  const profilePictureInput = useRef(null);
 
   const [form, setForm] = useState({
     bio: '', collaborationStatus: 'available', preferredMeetingMode: 'any',
@@ -178,6 +181,49 @@ export default function ProfilePage() {
   const displayedInterests = interestsExpanded
     ? visibleInterests
     : visibleInterests.slice(0, INTERESTS_PREVIEW_LIMIT);
+
+  const uploadProfilePicture = async (event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    setPictureUploading(true);
+    setSaveFeedback(null);
+
+    try {
+      const params = new URLSearchParams({
+        name: file.name,
+        type: file.type,
+      });
+      const response = await api.post(
+        `/students/me/profile-picture?${params.toString()}`,
+        await file.arrayBuffer(),
+        { headers: { 'Content-Type': 'application/octet-stream' } }
+      );
+      const pictureUrl = response.data?.data?.profilePictureUrl;
+
+      if (!pictureUrl) {
+        throw new Error('The server did not confirm the uploaded picture.');
+      }
+
+      setProfile(current => ({
+        ...current,
+        profile_picture_url: `${pictureUrl}?v=${Date.now()}`,
+      }));
+      setSaveFeedback({
+        type: 'success',
+        message: 'Profile picture updated successfully.',
+      });
+    } catch (requestError) {
+      setSaveFeedback({
+        type: 'error',
+        message: getApiErrorMessage(requestError, 'Could not upload your profile picture.'),
+      });
+    } finally {
+      setPictureUploading(false);
+      input.value = '';
+    }
+  };
 
   const saveAll = async () => {
     setSaving('all');
@@ -287,6 +333,37 @@ export default function ProfilePage() {
 
       <section className="profile-card">
         <SectionHeading title="Personal & academic information" description="Your academic identity comes from the university student registry." />
+        <div className="profile-picture-control">
+          <ImageAvatar
+            src={profile?.profile_picture_url}
+            name={profile?.full_name}
+            className="profile-picture-avatar"
+          />
+          <div className="profile-picture-actions">
+            <button
+              type="button"
+              className="profile-expand-button"
+              disabled={locked || !!saving || pictureUploading}
+              onClick={() => profilePictureInput.current?.click()}
+            >
+              {pictureUploading
+                ? 'Uploading picture…'
+                : profile?.profile_picture_url
+                  ? 'Change profile picture'
+                  : 'Add profile picture'}
+            </button>
+            <input
+              ref={profilePictureInput}
+              className="profile-picture-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              aria-label="Choose a profile picture"
+              disabled={locked || !!saving || pictureUploading}
+              onChange={uploadProfilePicture}
+            />
+            <small>JPG, PNG, or WebP. Maximum file size: 5 MB.</small>
+          </div>
+        </div>
         <div className="profile-identity-grid">
           <ReadOnlyField label="Full name" value={profile?.full_name} />
           <ReadOnlyField label="Registration number" value={profile?.registration_number} />

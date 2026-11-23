@@ -1,5 +1,7 @@
 import pool from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
+import { deleteStoredPicture } from '../utils/pictureStorage.js';
+import { getProfilePictureUrl } from '../utils/profilePictureUrl.js';
 
 
 // ======================================
@@ -17,6 +19,7 @@ export const getStudentProfile = async (userId) => {
 
             sp.bio,
             sp.profile_picture_url,
+            sp.profile_picture_storage_key,
 
             sp.collaboration_status,
             sp.availability_hours_per_week,
@@ -75,7 +78,19 @@ export const getStudentProfile = async (userId) => {
         throw new AppError('Student profile not found.', 404);
     }
 
-    return result.rows[0];
+    const {
+        profile_picture_storage_key: storageKey,
+        ...profile
+    } = result.rows[0];
+
+    return {
+        ...profile,
+        profile_picture_url: getProfilePictureUrl(
+            profile.user_id,
+            storageKey,
+            profile.profile_picture_url
+        )
+    };
 };
 
 
@@ -95,7 +110,7 @@ export const updateStudentProfile = async (userId, data) => {
         // from conflicting with profile review operations.
 
         const profileResult = await client.query(
-            `SELECT profile_review_status
+            `SELECT profile_review_status, profile_picture_storage_key
              FROM student_profiles
              WHERE user_id = $1
              FOR UPDATE`,
@@ -107,6 +122,8 @@ export const updateStudentProfile = async (userId, data) => {
         }
 
         const reviewStatus = profileResult.rows[0].profile_review_status;
+        const oldPictureStorageKey =
+            profileResult.rows[0].profile_picture_storage_key;
 
         // Do not allow changes while an admin is reviewing
         // the submitted profile.
@@ -150,6 +167,10 @@ export const updateStudentProfile = async (userId, data) => {
             }
         }
 
+        if (Object.hasOwn(data, 'profilePictureUrl')) {
+            updates.push('profile_picture_storage_key = NULL');
+        }
+
         if (updates.length === 0) {
             throw new AppError(
                 'No profile changes were provided.',
@@ -180,6 +201,14 @@ export const updateStudentProfile = async (userId, data) => {
         );
 
         await client.query('COMMIT');
+
+        if (Object.hasOwn(data, 'profilePictureUrl') && oldPictureStorageKey) {
+            try {
+                await deleteStoredPicture('profile', oldPictureStorageKey);
+            } catch (cleanupError) {
+                console.error('Unable to remove a replaced profile picture:', cleanupError);
+            }
+        }
 
         return await getStudentProfile(userId);
 

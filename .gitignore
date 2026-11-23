@@ -14,6 +14,8 @@ build/
 
 # Private uploaded chat files
 server/storage/chat-attachments/
+server/storage/profile-pictures/
+server/storage/group-pictures/
 
 # Logs
 *.log

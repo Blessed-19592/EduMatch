@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUsers } from '@fortawesome/free-solid-svg-icons';
 import api, { getApiErrorMessage } from '../../api/api';
+import ImageAvatar from '../../components/ImageAvatar';
 import MembershipRequestsPage from './MembershipRequestsPage';
 import GroupInvitationPanel from './GroupInvitationPanel';
 import './GroupDetailsPage.css';
@@ -32,6 +35,10 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
   const [error, setError] = useState('');
   const [leaving, setLeaving] = useState(false);
   const [notice, setNotice] = useState('');
+  const [pictureUploading, setPictureUploading] = useState(false);
+  const [pictureFeedback, setPictureFeedback] = useState(null);
+  const pictureInput = useRef(null);
+  const pictureFeedbackTimer = useRef(null);
   const [showRequests, setShowRequests] = useState(false);
 
   const loadDetails = useCallback(async () => {
@@ -48,6 +55,63 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
   }, [groupId]);
 
   useEffect(() => { loadDetails(); }, [loadDetails]);
+
+  useEffect(() => () => {
+    if (pictureFeedbackTimer.current) {
+      window.clearTimeout(pictureFeedbackTimer.current);
+    }
+  }, []);
+
+  const uploadPicture = async (event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (pictureFeedbackTimer.current) {
+      window.clearTimeout(pictureFeedbackTimer.current);
+      pictureFeedbackTimer.current = null;
+    }
+    setPictureUploading(true);
+    setPictureFeedback(null);
+
+    try {
+      const params = new URLSearchParams({
+        name: file.name,
+        type: file.type,
+      });
+      const response = await api.post(
+        `/groups/${groupId}/picture?${params.toString()}`,
+        await file.arrayBuffer(),
+        { headers: { 'Content-Type': 'application/octet-stream' } }
+      );
+      const pictureUrl = response.data?.data?.groupPictureUrl;
+
+      if (!pictureUrl) {
+        throw new Error('The server did not confirm the uploaded picture.');
+      }
+
+      setGroup(current => ({
+        ...current,
+        group_picture_url: `${pictureUrl}?v=${Date.now()}`,
+      }));
+      setPictureFeedback({
+        type: 'success',
+        message: 'Group picture updated successfully.',
+      });
+      pictureFeedbackTimer.current = window.setTimeout(() => {
+        setPictureFeedback(null);
+        pictureFeedbackTimer.current = null;
+      }, 3500);
+    } catch (requestError) {
+      setPictureFeedback({
+        type: 'error',
+        message: getApiErrorMessage(requestError, 'Could not upload the group picture.'),
+      });
+    } finally {
+      setPictureUploading(false);
+      input.value = '';
+    }
+  };
 
   const leaveGroup = async () => {
     const confirmed = window.confirm('Are you sure you want to leave this group?');
@@ -108,6 +172,12 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
       <button type="button" className="gd-back" onClick={onBack}>Back to My Groups</button>
 
       <header className="gd-hero">
+        <ImageAvatar
+          src={group.group_picture_url}
+          name={group.group_name}
+          className="gd-hero-icon"
+          fallback={<FontAwesomeIcon icon={faUsers} />}
+        />
         <div className="gd-hero-copy">
           <span className="gd-eyebrow">GROUP OVERVIEW</span>
           <h1>{group.group_name}</h1>
@@ -118,7 +188,42 @@ export default function GroupDetailsPage({ groupId, membershipRole, onBack, onMe
             {isMember && !isOwner && <span className="gd-badge member">You are a member</span>}
           </div>
         </div>
+        {isOwner && (
+          <div className="gd-picture-control">
+            <input
+              ref={pictureInput}
+              className="gd-picture-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              aria-label="Choose a group picture"
+              disabled={pictureUploading}
+              onChange={uploadPicture}
+            />
+            <button
+              type="button"
+              className="gd-picture-button"
+              disabled={pictureUploading}
+              onClick={() => pictureInput.current?.click()}
+            >
+              {pictureUploading
+                ? 'Uploading…'
+                : group.group_picture_url
+                  ? 'Change group picture'
+                  : 'Add group picture'}
+            </button>
+            <small>JPG, PNG, or WebP. Maximum file size: 5 MB.</small>
+          </div>
+        )}
       </header>
+
+      {pictureFeedback && (
+        <div
+          className={`gd-picture-feedback ${pictureFeedback.type}`}
+          role={pictureFeedback.type === 'error' ? 'alert' : 'status'}
+        >
+          {pictureFeedback.message}
+        </div>
+      )}
 
       <div className="gd-summary">
         <div><strong>{memberCount} / {maxMembers || '—'}</strong><span>Active members</span></div>

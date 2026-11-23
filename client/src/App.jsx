@@ -50,7 +50,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import './App.css';
-import './theme.css';
 
 const navigation = [
   {
@@ -588,7 +587,6 @@ function StudentWorkspace() {
   const { user, logout } = useAuth();
   const [activePage, setActivePage] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState('light');
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsError, setSettingsError] = useState('');
@@ -598,12 +596,15 @@ function StudentWorkspace() {
       const response = await api.get('/settings');
       const loadedSettings = response.data?.data?.settings;
 
-      if (!loadedSettings || !['light', 'dark'].includes(loadedSettings.theme)) {
+      if (
+        !loadedSettings ||
+        typeof loadedSettings !== 'object' ||
+        Array.isArray(loadedSettings)
+      ) {
         throw new Error('The server returned invalid account settings.');
       }
 
       setSettings(loadedSettings);
-      setTheme(loadedSettings.theme);
     } catch (requestError) {
       setSettings(null);
       setSettingsError(
@@ -624,13 +625,6 @@ function StudentWorkspace() {
     loadSettings();
   }, [loadSettings]);
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    return () => {
-      delete document.documentElement.dataset.theme;
-    };
-  }, [theme]);
-
   const handleLogout = async () => {
     try {
       await logout();
@@ -640,7 +634,7 @@ function StudentWorkspace() {
   };
 
   return (
-    <div className="app-layout" data-theme={theme}>
+    <div className="app-layout">
       <Topbar
         activePage={activePage}
         sidebarOpen={sidebarOpen}
@@ -689,7 +683,6 @@ function StudentWorkspace() {
           loading={settingsLoading}
           error={settingsError}
           onNavigate={setActivePage}
-          onThemeChange={setTheme}
           onSettingsChange={setSettings}
           onRetry={retrySettings}
         />

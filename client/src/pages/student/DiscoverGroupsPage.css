@@ -49,6 +49,51 @@
     }
 }
 
+.discover-group-heading,
+.discover-modal-group-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.discover-group-heading {
+    margin: 15px 0 8px;
+}
+
+.discover-group-heading h2,
+.discover-modal-group-heading h2 {
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.discover-group-avatar,
+.discover-modal-avatar {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 12px;
+    background: #eaf2fc;
+    color: #2867aa;
+}
+
+.discover-group-avatar {
+    width: 46px;
+    height: 46px;
+    font-size: 17px;
+}
+
+.discover-modal-group-heading {
+    margin: 14px 0 5px;
+}
+
+.discover-modal-avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 19px;
+}
+
 .discover-groups-page {
     max-width: 1280px;
     padding: 32px clamp(16px, 3vw, 42px) 48px;
