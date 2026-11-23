@@ -30,3 +30,6 @@ coverage/
 
 # Temporary files
 *.tmp
+
+# Local Copilot instructions
+.github/copilot-instructions.md

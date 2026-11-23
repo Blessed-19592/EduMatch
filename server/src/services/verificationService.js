@@ -16,13 +16,13 @@ export const requestStudentVerification = async (registrationNumber) => {
     );
 
     if (studentResult.rows.length === 0) {
-        throw new Error('Unable to process this registration request.');
+        return;
     }
 
     const student = studentResult.rows[0];
 
     if (!student.verification_email) {
-        throw new Error('Unable to process this registration request.');
+        return;
     }
 
     // Generate a random six-digit code.

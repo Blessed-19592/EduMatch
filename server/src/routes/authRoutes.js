@@ -77,7 +77,7 @@ const resetPasswordSchema = z.object({
 router.post(
     '/register/request-code',
     verificationLimiter,
-    async (req, res) => {
+    async (req, res, next) => {
         try {
             const validation = registrationSchema.safeParse(req.body);
 
@@ -98,12 +98,7 @@ router.post(
             });
 
         } catch (error) {
-            console.error('Verification request failed:', error.message);
-
-            return res.status(400).json({
-                status: 'error',
-                message: 'Unable to process your request. Please check your details or try again later.'
-            });
+            next(error);
         }
     }
 );

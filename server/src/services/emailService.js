@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import 'dotenv/config';
+import { createPasswordResetUrl } from '../utils/passwordResetUrl.js';
 
 // Configure Gmail as the email provider.
 const transporter = nodemailer.createTransport({
@@ -53,6 +54,11 @@ export const sendVerificationEmail = async (email, code) => {
 
 export const sendPasswordResetEmail = async (email, token) => {
     try {
+        const resetUrl = createPasswordResetUrl(
+            token,
+            process.env.CLIENT_URL
+        );
+
         const info = await transporter.sendMail({
             from: `"EduMatch" <${process.env.EMAIL_USER}>`,
             to: email,
@@ -61,9 +67,8 @@ export const sendPasswordResetEmail = async (email, token) => {
             text: `
 You requested a password reset for your EduMatch account.
 
-Your password reset token is:
-
-${token}
+Reset your password using this link:
+${resetUrl}
 
 This token expires in 30 minutes and can only be used once.
 
@@ -73,8 +78,7 @@ If you did not request this reset, ignore this email.
             html: `
                 <h2>EduMatch Password Reset</h2>
                 <p>You requested a password reset for your account.</p>
-                <p>Your password reset token is:</p>
-                <h3>${token}</h3>
+                <p><a href="${resetUrl}">Reset your password</a></p>
                 <p>This token expires in 30 minutes and can only be used once.</p>
                 <p>If you did not request this reset, ignore this email.</p>
             `,

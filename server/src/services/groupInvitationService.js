@@ -1,6 +1,40 @@
 import pool from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 
+const assertGroupYearEligibility = async (
+    client,
+    groupId,
+    acceptsAllYears,
+    yearOfStudy,
+    statusCode
+) => {
+    if (acceptsAllYears) {
+        return;
+    }
+
+    if (yearOfStudy == null) {
+        throw new AppError(
+            "The student's academic year is unavailable.",
+            statusCode
+        );
+    }
+
+    const allowedYearResult = await client.query(
+        `SELECT 1
+         FROM group_allowed_years
+         WHERE group_id = $1
+           AND year_of_study = $2`,
+        [groupId, yearOfStudy]
+    );
+
+    if (allowedYearResult.rows.length === 0) {
+        throw new AppError(
+            "The student does not meet this group's year-of-study requirements.",
+            statusCode
+        );
+    }
+};
+
 
 // =====================================================
 // GET STUDENTS ELIGIBLE FOR INVITATION
@@ -8,7 +42,7 @@ import { AppError } from '../utils/AppError.js';
 
 export const getEligibleCollaborators = async (groupId, ownerId) => {
     const groupResult = await pool.query(
-        `SELECT group_id
+        `SELECT group_id, accepts_all_years
          FROM student_groups
          WHERE group_id = $1
            AND created_by = $2
@@ -62,6 +96,15 @@ export const getEligibleCollaborators = async (groupId, ownerId) => {
                (scr.recipient_id = $2 AND scr.sender_id = u.user_id)
            )
            AND u.account_status = 'active'
+           AND (
+               $3::boolean
+               OR EXISTS (
+                   SELECT 1
+                   FROM group_allowed_years gay
+                   WHERE gay.group_id = $1
+                     AND gay.year_of_study = sp.year_of_study
+               )
+           )
            AND NOT EXISTS (
                SELECT 1
                FROM group_members gm
@@ -78,7 +121,7 @@ export const getEligibleCollaborators = async (groupId, ownerId) => {
            )
 
          ORDER BY u.full_name ASC`,
-        [groupId, ownerId]
+        [groupId, ownerId, groupResult.rows[0].accepts_all_years]
     );
 
     return result.rows;
@@ -101,7 +144,7 @@ export const sendGroupInvitation = async (
         await client.query('BEGIN');
 
         const groupResult = await client.query(
-            `SELECT group_id, group_status, created_by
+            `SELECT group_id, group_status, created_by, accepts_all_years
              FROM student_groups
              WHERE group_id = $1
              FOR UPDATE`,
@@ -146,19 +189,28 @@ export const sendGroupInvitation = async (
         }
 
         const inviteeResult = await client.query(
-            `SELECT u.user_id
+            `SELECT u.user_id, sp.year_of_study
              FROM users u
              JOIN student_profiles sp
                 ON sp.user_id = u.user_id
              WHERE u.user_id = $1
                AND u.role = 'student'
-               AND u.account_status = 'active'`,
+               AND u.account_status = 'active'
+             FOR SHARE OF u, sp`,
             [inviteeId]
         );
 
         if (inviteeResult.rows.length === 0) {
             throw new AppError('Student not found or inactive.', 404);
         }
+
+        await assertGroupYearEligibility(
+            client,
+            groupId,
+            group.accepts_all_years,
+            inviteeResult.rows[0].year_of_study,
+            403
+        );
 
         const collaborationResult = await client.query(
             `SELECT request_id
@@ -327,7 +379,7 @@ export const respondToGroupInvitation = async (
         if (decision === 'accepted') {
             // Lock the group before changing membership.
             const groupResult = await client.query(
-                `SELECT group_id, group_status, created_by
+                `SELECT group_id, group_status, created_by, accepts_all_years
                  FROM student_groups
                  WHERE group_id = $1
                  FOR UPDATE`,
@@ -367,6 +419,29 @@ export const respondToGroupInvitation = async (
                     409
                 );
             }
+
+            const inviteeResult = await client.query(
+                `SELECT year_of_study
+                 FROM student_profiles
+                 WHERE user_id = $1
+                 FOR SHARE`,
+                [inviteeId]
+            );
+
+            if (inviteeResult.rows.length === 0) {
+                throw new AppError(
+                    'The invited student profile is unavailable.',
+                    409
+                );
+            }
+
+            await assertGroupYearEligibility(
+                client,
+                invitation.group_id,
+                group.accepts_all_years,
+                inviteeResult.rows[0].year_of_study,
+                409
+            );
 
             // Confirm the accepted collaboration still exists.
             const collaborationResult = await client.query(

@@ -145,13 +145,12 @@ const refreshSocketSession = async (socket) => {
 
 export const configureSocketServer = (
     httpServer,
-    sessionMiddleware
+    sessionMiddleware,
+    allowedOrigins
 ) => {
-    const allowedOrigin = process.env.CLIENT_URL;
-
     const io = new Server(httpServer, {
         cors: {
-            origin: allowedOrigin,
+            origin: [...allowedOrigins],
             credentials: true
         },
 
@@ -165,7 +164,7 @@ export const configureSocketServer = (
                 return callback(null, true);
             }
 
-            if (allowedOrigin && origin === allowedOrigin) {
+            if (allowedOrigins.has(origin)) {
                 return callback(null, true);
             }
 

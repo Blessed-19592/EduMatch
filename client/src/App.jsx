@@ -91,7 +91,7 @@ const navigation = [
   },
 ];
 
-function Topbar({ activePage, openSidebar, user, onLogout, onNavigate }) {
+function Topbar({ activePage, sidebarOpen, onToggleSidebar, user, onLogout, onNavigate }) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   return (
@@ -110,10 +110,12 @@ function Topbar({ activePage, openSidebar, user, onLogout, onNavigate }) {
 
         <button
           className="menu-button"
-          onClick={openSidebar}
-          aria-label="Open navigation"
+          onClick={onToggleSidebar}
+          aria-label={sidebarOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={sidebarOpen}
+          aria-controls="student-navigation"
         >
-          <FontAwesomeIcon icon={faBars} />
+          <FontAwesomeIcon icon={sidebarOpen ? faXmark : faBars} />
         </button>
 
         <div className="breadcrumb">
@@ -199,7 +201,11 @@ function Sidebar({ activePage, setActivePage, open, closeSidebar }) {
 
   return (
     <>
-      <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
+      <aside
+        id="student-navigation"
+        className={`sidebar ${open ? 'sidebar-open' : ''}`}
+        aria-label="Student navigation"
+      >
         <div className="sidebar-content">
           {navigation.map((section) => (
             <div className="nav-section" key={section.title}>
@@ -317,29 +323,26 @@ function Sidebar({ activePage, setActivePage, open, closeSidebar }) {
   );
 }
 
-function StatCard({ icon, label, value, description }) {
+function StatCard({ icon, label, value, description, onClick }) {
   return (
-    <div className="stat-card">
-      <div className="stat-top">
-        <div className="stat-icon">
-          <FontAwesomeIcon icon={icon} />
-        </div>
-
-        <span className="stat-period">Overview</span>
-      </div>
-
-      <h3>{value}</h3>
-
-      <p className="stat-label">{label}</p>
-
-      <span className="stat-description">{description}</span>
-    </div>
+    <button className="stat-card" type="button" onClick={onClick}>
+      <span className="stat-icon" aria-hidden="true">
+        <FontAwesomeIcon icon={icon} />
+      </span>
+      <span className="stat-content">
+        <span className="stat-label">{label}</span>
+        <strong>{value}</strong>
+        <span className="stat-description">{description}</span>
+      </span>
+      <FontAwesomeIcon className="stat-arrow" icon={faArrowUpRightFromSquare} aria-hidden="true" />
+    </button>
   );
 }
 
 function Dashboard({ onNavigate, user }) {
   const [myPendingTasks, setMyPendingTasks] = useState(0);
   const [tasksLoading, setTasksLoading] = useState(true);
+  const [tasksError, setTasksError] = useState(false);
   const [groups, setGroups] = useState([]);
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupsError, setGroupsError] = useState('');
@@ -348,7 +351,6 @@ function Dashboard({ onNavigate, user }) {
     const fetchGroups = async () => {
       try {
         const response = await api.get('/groups/my-groups');
-
         const rows = Array.isArray(response.data?.groups)
           ? response.data.groups
           : [];
@@ -366,159 +368,162 @@ function Dashboard({ onNavigate, user }) {
   }, []);
 
   useEffect(() => {
-  if (groupsLoading) return;
+    if (groupsLoading) return;
 
-  if (!user?.userId || groups.length === 0) {
-    setMyPendingTasks(0);
-    setTasksLoading(false);
-    return;
-  }
-
-  let active = true;
-
-  const fetchMyTasks = async () => {
-    setTasksLoading(true);
-
-    try {
-      const responses = await Promise.all(
-        groups.map((group) =>
-          api.get(`/groups/${group.group_id}/tasks`)
-        )
-      );
-
-      const allTasks = responses.flatMap((response) =>
-        Array.isArray(response.data?.tasks)
-          ? response.data.tasks
-          : []
-      );
-
-      const unfinishedTasks = allTasks.filter(
-        (task) =>
-          String(task.assigned_to) === String(user.userId) &&
-          task.task_status !== 'completed'
-      );
-
-      if (active) {
-        setMyPendingTasks(unfinishedTasks.length);
-      }
-    } catch (error) {
-      console.error('Failed to load dashboard tasks:', error);
-    } finally {
-      if (active) {
-        setTasksLoading(false);
-      }
+    if (groupsError) {
+      setTasksError(true);
+      setTasksLoading(false);
+      return;
     }
-  };
 
-  fetchMyTasks();
+    if (!user?.userId || groups.length === 0) {
+      setMyPendingTasks(0);
+      setTasksError(false);
+      setTasksLoading(false);
+      return;
+    }
 
-  return () => {
-    active = false;
-  };
-}, [groups, groupsLoading, user?.userId]);
+    let active = true;
+
+    const fetchMyTasks = async () => {
+      setTasksLoading(true);
+      setTasksError(false);
+
+      try {
+        const responses = await Promise.all(
+          groups.map((group) => api.get(`/groups/${group.group_id}/tasks`))
+        );
+        const allTasks = responses.flatMap((response) =>
+          Array.isArray(response.data?.tasks) ? response.data.tasks : []
+        );
+        const unfinishedTasks = allTasks.filter(
+          (task) =>
+            String(task.assigned_to) === String(user.userId) &&
+            task.task_status !== 'completed'
+        );
+
+        if (active) {
+          setMyPendingTasks(unfinishedTasks.length);
+        }
+      } catch (error) {
+        console.error('Failed to load dashboard tasks:', error);
+        if (active) {
+          setTasksError(true);
+        }
+      } finally {
+        if (active) {
+          setTasksLoading(false);
+        }
+      }
+    };
+
+    fetchMyTasks();
+
+    return () => {
+      active = false;
+    };
+  }, [groups, groupsError, groupsLoading, user?.userId]);
 
   const totalGroups = groups.length;
-
   const pendingRequests = groups.reduce(
     (total, group) =>
-      total + (group.membership_role === 'owner'
+      total +
+      (group.membership_role === 'owner'
         ? Number(group.pending_requests || 0)
         : 0),
     0
   );
+  const firstName = user?.fullName?.trim().split(/\s+/)[0] || 'there';
 
   return (
     <div className="dashboard">
-
       <header className="dashboard-header">
-        <div>
-          <span className="welcome-label">STUDENT WORKSPACE</span>
-          <h1>Welcome to EduMatch</h1>
-          <p>Your space to connect, collaborate and achieve more together.</p>
+        <div className="dashboard-welcome">
+          <span className="welcome-label">YOUR STUDENT WORKSPACE</span>
+          <h1>Welcome back, {firstName}</h1>
+          <p>Find your people, move projects forward, and make progress together.</p>
         </div>
-
         <button
-          className="primary-button"
+          className="primary-button dashboard-create-button"
+          type="button"
           onClick={() => onNavigate('Create Group')}
         >
           <FontAwesomeIcon icon={faPlus} />
-              Create a group
-          
+          Create a group
         </button>
       </header>
 
-      <section className="dashboard-stats">
-
-        <button
-          className="stat-card"
+      <section className="dashboard-stats" aria-label="Your collaboration overview">
+        <StatCard
+          icon={faUsers}
+          label="My groups"
+          value={groupsLoading || groupsError ? '—' : totalGroups}
+          description={groupsError ? 'Group data is unavailable' : "Groups you're part of"}
           onClick={() => onNavigate('My Groups')}
-        >
-          <span className="stat-label">My groups</span>
-          <strong>{groupsLoading ? '—' : totalGroups}</strong>
-          <span className="stat-description">Groups you're part of</span>
-        </button>
-
-        <button
-          className="stat-card"
+        />
+        <StatCard
+          icon={faBell}
+          label="Pending requests"
+          value={groupsLoading || groupsError ? '—' : pendingRequests}
+          description={groupsError ? 'Group data is unavailable' : 'For groups you own'}
           onClick={() => onNavigate('Membership Requests')}
-        >
-          <span className="stat-label">Pending requests</span>
-          <strong>{groupsLoading ? '—' : pendingRequests}</strong>
-          <span className="stat-description">Requests for groups you own</span>
-        </button>
-
-        <button
-          className="stat-card"
+        />
+        <StatCard
+          icon={faClipboardCheck}
+          label="My open tasks"
+          value={tasksLoading || tasksError ? '—' : myPendingTasks}
+          description={tasksError ? "Couldn't load your tasks" : 'Assigned to you'}
           onClick={() => onNavigate('My Tasks')}
-        >
-          <span className="stat-label">My tasks</span>
-          <strong>
-          {tasksLoading ? '—' : myPendingTasks}
-          </strong>
-        </button>
-
+        />
         <button
-          className="stat-card"
+          className="dashboard-messages-card"
+          type="button"
           onClick={() => onNavigate('Messages')}
         >
-          <span className="stat-label">Messages</span>
-          <strong>—</strong>
-          <span className="stat-description">Open group conversations</span>
+          <span className="messages-icon" aria-hidden="true">
+            <FontAwesomeIcon icon={faComments} />
+          </span>
+          <span className="messages-copy">
+            <strong>Group messages</strong>
+            <span>Continue the conversation with your groups.</span>
+          </span>
+          <span className="messages-link">Open messages</span>
         </button>
-
       </section>
 
       <section className="content-card dashboard-groups">
-
         <div className="card-heading">
           <div>
             <h2>My collaborations</h2>
             <p>Your active student collaborations.</p>
           </div>
-
           <button
             className="text-button"
+            type="button"
             onClick={() => onNavigate('My Groups')}
           >
             View all
+            <FontAwesomeIcon icon={faArrowUpRightFromSquare} aria-hidden="true" />
           </button>
         </div>
 
         {groupsLoading ? (
-          <p className="dashboard-message">Loading your groups...</p>
+          <p className="dashboard-message" role="status">Loading your groups...</p>
         ) : groupsError ? (
-          <p className="dashboard-message error">{groupsError}</p>
+          <p className="dashboard-message error" role="alert">{groupsError}</p>
         ) : groups.length > 0 ? (
           <div className="dashboard-group-list">
             {groups.slice(0, 4).map((group) => (
               <article className="dashboard-group-row" key={group.group_id}>
+                <span className="group-icon" aria-hidden="true">
+                  <FontAwesomeIcon icon={faUsers} />
+                </span>
                 <div className="dashboard-group-info">
                   <h3>{group.group_name}</h3>
                   <p>{group.intention_name || 'Collaboration group'}</p>
                 </div>
-
                 <div className="dashboard-group-meta">
-                  <span>
+                  <span className="group-member-count">
                     {group.current_members} / {group.max_members} members
                   </span>
                   <span className={`dashboard-status ${String(group.group_status).toLowerCase()}`}>
@@ -530,19 +535,22 @@ function Dashboard({ onNavigate, user }) {
           </div>
         ) : (
           <div className="dashboard-empty">
+            <span className="empty-groups-icon" aria-hidden="true">
+              <FontAwesomeIcon icon={faUsers} />
+            </span>
             <h3>No collaborations yet</h3>
             <p>Create a group or discover one that matches your interests.</p>
-
             <div className="dashboard-empty-actions">
               <button
                 className="secondary-button"
+                type="button"
                 onClick={() => onNavigate('Discover Groups')}
               >
                 Discover groups
               </button>
-
               <button
                 className="text-button"
+                type="button"
                 onClick={() => onNavigate('Create Group')}
               >
                 Create a group
@@ -550,29 +558,31 @@ function Dashboard({ onNavigate, user }) {
             </div>
           </div>
         )}
-
       </section>
 
       <section className="dashboard-discovery">
-        <div>
-          <span>DISCOVER</span>
+        <span className="discovery-icon" aria-hidden="true">
+          <FontAwesomeIcon icon={faGlobe} />
+        </span>
+        <div className="discovery-copy">
+          <span className="discovery-eyebrow">DISCOVER</span>
           <h2>Find people who share your goals.</h2>
           <p>Connect with students, explore their skills and find your next collaboration.</p>
         </div>
-
         <button
           className="primary-button"
+          type="button"
           onClick={() => onNavigate('Find Students')}
         >
           Find collaborators
+          <FontAwesomeIcon icon={faArrowUpRightFromSquare} aria-hidden="true" />
         </button>
       </section>
 
       <footer className="dashboard-footer">
-        <span>© 2026 EduMatch</span>
+        <span>EduMatch</span>
         <span>Built for student collaboration</span>
       </footer>
-
     </div>
   );
 }
@@ -594,7 +604,8 @@ function StudentWorkspace() {
     <div className="app-layout">
       <Topbar
         activePage={activePage}
-        openSidebar={() => setSidebarOpen(true)}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen((open) => !open)}
         user={user}
         onLogout={handleLogout}
         onNavigate={setActivePage}

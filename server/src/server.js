@@ -18,6 +18,7 @@ import authRoutes from './routes/authRoutes.js';
 import { configureSocketServer } from './sockets/socketServer.js';
 
 import { csrfProtection } from './middleware/csrfProtection.js';
+import { apiErrorHandler } from './middleware/apiErrorHandler.js';
 
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
@@ -28,6 +29,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import pool from './config/database.js';
+import { getClientOrigins } from './config/clientOrigins.js';
 
 
 // ======================================
@@ -43,6 +45,8 @@ const requiredEnvironmentVariables = [
     'DB_USER',
     'DB_PASSWORD'
 ];
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 for (const variable of requiredEnvironmentVariables) {
     if (!process.env[variable]) {
@@ -75,6 +79,8 @@ try {
     );
 }
 
+const allowedOrigins = getClientOrigins(allowedOrigin, isProduction);
+
 
 // ======================================
 // APPLICATION INITIALIZATION
@@ -87,8 +93,6 @@ const httpServer = createServer(app);
 const PgSession = connectPgSimple(session);
 
 const PORT = Number(process.env.PORT) || 5000;
-
-const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction) {
     app.set('trust proxy', 1);
@@ -137,7 +141,7 @@ app.use((req, res, next) => {
         return next();
     }
 
-    if (origin !== allowedOrigin) {
+    if (!allowedOrigins.has(origin)) {
         return res.status(403).json({
             status: 'error',
             message: 'Request origin not allowed.'
@@ -153,7 +157,7 @@ app.use((req, res, next) => {
 // ======================================
 
 app.use(cors({
-    origin: allowedOrigin,
+    origin: [...allowedOrigins],
     credentials: true,
     methods: [
         'GET',
@@ -361,44 +365,7 @@ app.use((req, res) => {
 // CENTRALIZED ERROR HANDLER
 // ======================================
 
-app.use((error, req, res, next) => {
-    console.error('API ERROR:', {
-        method: req.method,
-        path: req.path,
-        error: error.message,
-        code: error.code
-    });
-
-    let statusCode = error.statusCode || 500;
-
-    let message = error.message || 'An unexpected error occurred.';
-
-    if (error.code === '23505') {
-        statusCode = 409;
-        message = 'This record already exists.';
-    }
-
-    else if (
-        ['23503', '23514', '22P02'].includes(error.code)
-    ) {
-        statusCode = 400;
-        message = 'The submitted information is invalid.';
-    }
-
-    else if (error.code === 'P0001') {
-        statusCode = 409;
-        message = 'The requested operation conflicts with current group conditions.';
-    }
-
-    if (statusCode >= 500) {
-        message = 'An unexpected server error occurred.';
-    }
-
-    res.status(statusCode).json({
-        status: 'error',
-        message
-    });
-});
+app.use(apiErrorHandler);
 
 
 // ======================================
@@ -407,7 +374,8 @@ app.use((error, req, res, next) => {
 
 configureSocketServer(
     httpServer,
-    sessionMiddleware
+    sessionMiddleware,
+    allowedOrigins
 );
 
 
