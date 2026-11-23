@@ -155,6 +155,18 @@ export default function ProfilePage() {
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
 
+  useEffect(() => {
+    if (saveFeedback?.type !== 'success') return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      setSaveFeedback((current) =>
+        current?.type === 'success' ? null : current
+      );
+    }, 4000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [saveFeedback]);
+
   const locked = profile?.profile_review_status === 'submitted';
   const visibleSkills = useMemo(() => skillsCatalog.filter((item) =>
     `${item.skill_name} ${item.category}`.toLowerCase().includes(skillSearch.toLowerCase())), [skillsCatalog, skillSearch]);
@@ -249,6 +261,15 @@ export default function ProfilePage() {
 
   return (
     <div className="profile-page">
+      {saveFeedback && (
+        <p
+          className={`profile-save-feedback ${saveFeedback.type}`}
+          role={saveFeedback.type === 'error' ? 'alert' : 'status'}
+          aria-live={saveFeedback.type === 'error' ? 'assertive' : 'polite'}
+        >
+          {saveFeedback.message}
+        </p>
+      )}
       <div className="profile-page-header">
         <div>
           <h1>My Profile</h1>
@@ -348,14 +369,6 @@ export default function ProfilePage() {
 
       <div className="profile-bottom-note"><span>Your profile details help EduMatch suggest relevant students and groups. You control what you share, and you can update your profile whenever it is not under review.</span></div>
       <div className="profile-save-all-area">
-        {saveFeedback && (
-          <p
-            className={`profile-save-feedback ${saveFeedback.type}`}
-            role={saveFeedback.type === 'error' ? 'alert' : 'status'}
-          >
-            {saveFeedback.message}
-          </p>
-        )}
         <button
           type="button"
           className="profile-save-button profile-save-all-button"
