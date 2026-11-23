@@ -436,7 +436,6 @@ export default function PortfolioPage() {
     <div className="portfolio-page">
       <header className="portfolio-page-header">
         <div>
-          <p className="portfolio-eyebrow">YOUR PROFESSIONAL RECORD</p>
           <h1>Portfolio & Skills</h1>
           <p className="portfolio-page-description">
             Present your work, provide evidence of your abilities and

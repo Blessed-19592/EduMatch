@@ -563,3 +563,419 @@
     flex-direction: column;
   }
 }
+
+.portfolio-page {
+  max-width: 1280px;
+  padding: 32px clamp(16px, 3vw, 42px) 48px;
+  color: #111111;
+}
+
+.portfolio-page-header {
+  margin-bottom: 26px;
+}
+
+.portfolio-page-header h1 {
+  color: var(--primary);
+  font-size: clamp(28px, 3vw, 34px);
+  font-weight: 400;
+  letter-spacing: -0.3px;
+}
+
+.portfolio-page-description {
+  color: #111111;
+  font-size: 15px;
+}
+
+.portfolio-section {
+  padding: clamp(20px, 3vw, 30px);
+  border-color: #e1e7ef;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(25, 45, 70, 0.04);
+}
+
+.portfolio-section-header {
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.portfolio-section-header h2 {
+  color: var(--primary);
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.portfolio-section-header p {
+  color: #111111;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.portfolio-primary-button,
+.portfolio-secondary-button {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.portfolio-primary-button {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.portfolio-primary-button:hover:not(:disabled) {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.portfolio-secondary-button {
+  color: #111111;
+  border-color: #d7e0eb;
+}
+
+.portfolio-alert,
+.portfolio-review-notice {
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.portfolio-alert-success,
+.portfolio-approved-notice {
+  border-color: #9ed5aa;
+  background: #bfe9ca;
+  color: #111111;
+}
+
+.portfolio-review-notice {
+  background: #fff3d4;
+  border-color: #efdaa5;
+  color: #111111;
+}
+
+.portfolio-review-notice p {
+  color: #111111;
+}
+
+.portfolio-form,
+.assessment-create-form,
+.evidence-form {
+  padding: clamp(17px, 2.5vw, 24px);
+  border-color: #e1e7ef;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.portfolio-form-heading h3,
+.evidence-form h4 {
+  color: var(--primary);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.portfolio-field {
+  gap: 8px;
+}
+
+.portfolio-field > span {
+  color: #111111;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.portfolio-field small {
+  color: #111111;
+  opacity: 0.75;
+}
+
+.portfolio-field input,
+.portfolio-field select,
+.portfolio-field textarea {
+  box-sizing: border-box;
+  min-height: 45px;
+  padding: 11px 13px;
+  color: #111111;
+  border-color: #d7e0eb;
+  border-radius: 9px;
+  font-size: 14px;
+}
+
+.portfolio-field textarea {
+  line-height: 1.6;
+  resize: none;
+}
+
+.portfolio-field input::placeholder,
+.portfolio-field textarea::placeholder {
+  color: #536274;
+  opacity: 1;
+}
+
+.portfolio-field input:focus,
+.portfolio-field select:focus,
+.portfolio-field textarea:focus {
+  border-color: #6d9bd0;
+  box-shadow: 0 0 0 3px rgba(65, 110, 181, 0.12);
+}
+
+.portfolio-form-actions {
+  margin-top: 21px;
+}
+
+.portfolio-entry-list,
+.assessment-list {
+  gap: 15px;
+}
+
+.portfolio-entry-card,
+.assessment-card {
+  padding: clamp(17px, 2.5vw, 23px);
+  border-color: #e1e7ef;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(25, 45, 70, 0.03);
+}
+
+.portfolio-type-label {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #eaf1fb;
+  color: #1d568d;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
+.portfolio-entry-card h3,
+.assessment-card h3 {
+  color: #111111;
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.portfolio-entry-date,
+.assessment-details {
+  color: #111111;
+  font-size: 13px;
+}
+
+.portfolio-entry-description,
+.assessment-summary {
+  color: #111111;
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.portfolio-entry-links {
+  gap: 10px;
+}
+
+.portfolio-entry-links a,
+.assessment-evidence-item a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid #d6e1f0;
+  border-radius: 8px;
+  background: #f4f7fc;
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.portfolio-entry-links a:hover,
+.assessment-evidence-item a:hover {
+  background: #eaf1fb;
+  text-decoration: none;
+}
+
+.portfolio-entry-actions {
+  border-color: #e9edf2;
+}
+
+.portfolio-text-button {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.portfolio-danger-button {
+  color: #a33d3d;
+  font-size: 14px;
+}
+
+.portfolio-empty-state {
+  padding: 38px 22px;
+  border-color: #d7e0eb;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.portfolio-empty-state h3 {
+  color: var(--primary);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.portfolio-empty-state p,
+.portfolio-helper-text {
+  color: #111111;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.assessment-create-form {
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.assessment-create-form .portfolio-field {
+  gap: 8px;
+}
+
+.assessment-method,
+.assessment-details,
+.portfolio-linked-label {
+  color: #111111;
+}
+
+.assessment-status {
+  padding: 7px 11px;
+  font-size: 12px;
+}
+
+.status-pending {
+  background: #fff0cf;
+  color: #111111;
+}
+
+.status-approved,
+.status-completed {
+  background: #bfe9ca;
+  color: #111111;
+}
+
+.status-rejected,
+.status-failed {
+  background: #fde4e4;
+  color: #852f2f;
+}
+
+.assessment-evidence-panel {
+  border-color: #e1e7ef;
+}
+
+.assessment-evidence-panel h4 {
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.assessment-evidence-item {
+  padding: 15px;
+  border-color: #e1e7ef;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.assessment-evidence-item strong,
+.assessment-evidence-item p {
+  color: #111111;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.evidence-form {
+  margin-top: 20px;
+  border: 1px solid #e1e7ef;
+}
+
+.portfolio-loading {
+  padding: 48px 20px;
+  border: 1px solid #e1e7ef;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #111111;
+}
+
+.portfolio-page button:focus-visible,
+.portfolio-page a:focus-visible,
+.portfolio-page select:focus-visible {
+  outline: 2px solid #6d9bd0;
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .portfolio-page {
+    padding: 24px 16px 36px;
+  }
+
+  .portfolio-section-header {
+    gap: 14px;
+  }
+
+  .portfolio-section-header > button {
+    width: 100%;
+  }
+
+  .assessment-create-form {
+    align-items: stretch;
+  }
+
+  .assessment-create-form > button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .portfolio-page {
+    padding: 20px 13px 30px;
+  }
+
+  .portfolio-page-description,
+  .portfolio-section-header p {
+    font-size: 14px;
+  }
+
+  .portfolio-section {
+    padding: 18px 15px;
+  }
+
+  .portfolio-section-header h2 {
+    font-size: 19px;
+  }
+
+  .portfolio-form,
+  .assessment-create-form,
+  .evidence-form {
+    padding: 16px;
+  }
+
+  .portfolio-entry-top,
+  .assessment-card-header {
+    gap: 10px;
+  }
+
+  .portfolio-entry-links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .portfolio-entry-links a {
+    justify-content: center;
+  }
+
+  .portfolio-entry-actions {
+    gap: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-primary-button,
+  .portfolio-secondary-button {
+    transition: none;
+  }
+}
