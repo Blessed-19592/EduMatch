@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useSearchParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -17,10 +17,12 @@ import CollaborationRequestsPage from './pages/student/CollaborationRequestsPage
 import MessagesPage from './pages/student/MessagesPage';
 import TasksPage from './pages/student/TasksPage';
 import PortfolioPage from './pages/student/PortfolioPage';
+import SettingsPage from './pages/student/SettingsPage';
 import './components/auth/Auth.css';
 import GroupInvitationsPage from './pages/student/GroupInvitationsPage';
 import MembershipRequestsInboxPage from './pages/student/MembershipRequestsInboxPage';
-import api from './api/api';
+import NotificationCenter from './components/NotificationCenter';
+import api, { getApiErrorMessage } from './api/api';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -48,6 +50,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import './App.css';
+import './theme.css';
 
 const navigation = [
   {
@@ -136,13 +139,7 @@ function Topbar({ activePage, sidebarOpen, onToggleSidebar, user, onLogout, onNa
           />
         </div>
 
-        <button
-          className="notification-button"
-          aria-label="Notifications"
-        >
-          <FontAwesomeIcon icon={faBell} />
-          <span className="notification-dot" />
-        </button>
+        <NotificationCenter onNavigate={onNavigate} />
 
         <div className="header-divider" />
 
@@ -171,7 +168,7 @@ function Topbar({ activePage, sidebarOpen, onToggleSidebar, user, onLogout, onNa
                 My Profile
               </button>
 
-              <button onClick={() => setProfileOpen(false)}>
+              <button onClick={() => { setProfileOpen(false); onNavigate('Settings'); }}>
                 Account Settings
               </button>
 
@@ -588,9 +585,51 @@ function Dashboard({ onNavigate, user }) {
 }
 
 function StudentWorkspace() {
+  const { user, logout } = useAuth();
   const [activePage, setActivePage] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const [theme, setTheme] = useState('light');
+  const [settings, setSettings] = useState(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [settingsError, setSettingsError] = useState('');
+
+  const loadSettings = useCallback(async () => {
+    try {
+      const response = await api.get('/settings');
+      const loadedSettings = response.data?.data?.settings;
+
+      if (!loadedSettings || !['light', 'dark'].includes(loadedSettings.theme)) {
+        throw new Error('The server returned invalid account settings.');
+      }
+
+      setSettings(loadedSettings);
+      setTheme(loadedSettings.theme);
+    } catch (requestError) {
+      setSettings(null);
+      setSettingsError(
+        getApiErrorMessage(requestError, 'Could not load your account settings.')
+      );
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  const retrySettings = useCallback(() => {
+    setSettingsLoading(true);
+    setSettingsError('');
+    loadSettings();
+  }, [loadSettings]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    return () => {
+      delete document.documentElement.dataset.theme;
+    };
+  }, [theme]);
 
   const handleLogout = async () => {
     try {
@@ -601,7 +640,7 @@ function StudentWorkspace() {
   };
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" data-theme={theme}>
       <Topbar
         activePage={activePage}
         sidebarOpen={sidebarOpen}
@@ -643,6 +682,17 @@ function StudentWorkspace() {
         <TasksPage />
     ) : activePage === 'Portfolio & Skills' ? (
         <PortfolioPage />
+    ) : activePage === 'Settings' ? (
+        <SettingsPage
+          user={user}
+          settings={settings}
+          loading={settingsLoading}
+          error={settingsError}
+          onNavigate={setActivePage}
+          onThemeChange={setTheme}
+          onSettingsChange={setSettings}
+          onRetry={retrySettings}
+        />
     ) : (
         <div className="page-placeholder">
             <h1>{activePage}</h1>

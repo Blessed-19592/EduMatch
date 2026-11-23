@@ -278,6 +278,11 @@ const getStudentCandidates = async (studentId, years = []) => {
         WHERE u.user_id <> $1
           AND u.role = 'student'
           AND u.account_status = 'active'
+          AND COALESCE((
+              SELECT us.profile_discoverable
+              FROM user_settings us
+              WHERE us.user_id = u.user_id
+          ), TRUE)
           AND sp.collaboration_status IS DISTINCT FROM 'unavailable'
 
           AND (

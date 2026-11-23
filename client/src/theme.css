@@ -1,0 +1,306 @@
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --primary: #416eb5;
+  --primary-dark: #315b9d;
+  --active: #2f7654;
+  --background: #0c1422;
+  --surface: #172338;
+  --text-primary: #edf2f8;
+  --text-secondary: #c1ccda;
+  --border: #35445a;
+}
+
+:root[data-theme='dark'] body,
+.app-layout[data-theme='dark'] {
+  background: #0c1422;
+  color: #edf2f8;
+}
+
+.app-layout[data-theme='dark'] .topbar,
+.app-layout[data-theme='dark'] .brand,
+.app-layout[data-theme='dark'] .search-box,
+.app-layout[data-theme='dark'] .profile-dropdown,
+.app-layout[data-theme='dark'] .profile-dropdown button {
+  border-color: #35445a;
+  background: #172338;
+  color: #edf2f8;
+}
+
+.app-layout[data-theme='dark'] .topbar {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+}
+
+.app-layout[data-theme='dark'] .breadcrumb,
+.app-layout[data-theme='dark'] .breadcrumb strong,
+.app-layout[data-theme='dark'] .profile-info strong,
+.app-layout[data-theme='dark'] .profile-info span {
+  color: #edf2f8;
+}
+
+.app-layout[data-theme='dark'] .notification-button,
+.app-layout[data-theme='dark'] .profile-button {
+  color: #d3deeb;
+}
+
+.app-layout[data-theme='dark'] .notification-button:hover,
+.app-layout[data-theme='dark'] .profile-button:hover,
+.app-layout[data-theme='dark'] .profile-dropdown button:hover {
+  background: #263750;
+}
+
+.app-layout[data-theme='dark'] .notification-dot,
+.app-layout[data-theme='dark'] .notification-count {
+  border-color: #172338;
+}
+
+.app-layout[data-theme='dark'] .sidebar {
+  background: #14233a;
+}
+
+.app-layout[data-theme='dark'] .sidebar-bottom {
+  border-color: #35445a;
+}
+
+.app-layout[data-theme='dark'] .main-area {
+  background: #0c1422;
+  color: #edf2f8;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  section,
+  article,
+  .stat-card,
+  .content-card,
+  .empty-state,
+  .recommendations-card,
+  .page-placeholder,
+  [class$='-card'],
+  [class$='-section'],
+  [class$='-panel'],
+  [class$='-form'],
+  [class$='-empty-state']
+) {
+  border-color: #35445a !important;
+  background-color: #172338 !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  p,
+  label,
+  small,
+  strong,
+  span,
+  li,
+  .profile-page,
+  .tasks-page,
+  .portfolio-page,
+  .settings-page
+) {
+  color: #e6edf7;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  input,
+  textarea,
+  select,
+  .profile-search,
+  .mg-search,
+  .cg-skill-search
+) {
+  border-color: #46566d !important;
+  background-color: #101b2c !important;
+  color: #edf2f8 !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(input, textarea)::placeholder {
+  color: #a9b7c8 !important;
+  opacity: 1;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  a,
+  .profile-page-header h1,
+  .tasks-heading h1,
+  .portfolio-page-header h1,
+  .settings-heading h1,
+  .profile-section-heading h2,
+  .tasks-section-heading h2,
+  .portfolio-section-header h2,
+  .settings-card-heading h2,
+  .empty-state h3,
+  .page-placeholder h1
+) {
+  color: #9bc0ff !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  .settings-account-details > div,
+  .profile-readonly-field,
+  .profile-catalog-row,
+  .profile-intention,
+  .profile-tag,
+  .profile-choice,
+  .mg-filters button,
+  .mg-tags span,
+  .cg-choice,
+  .cg-year-options button,
+  .task-history,
+  .assessment-evidence-item,
+  .notification-panel
+) {
+  border-color: #35445a !important;
+  background-color: #1d2b40 !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  .profile-tag.selected,
+  .profile-choice.selected,
+  .cg-choice.selected,
+  .cg-year-options button.selected,
+  .mg-filters button.active,
+  .settings-theme-option.selected
+) {
+  border-color: #6488bb !important;
+  background-color: #263c5c !important;
+  color: #dceaff !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  .profile-status.status-approved,
+  .profile-alert.success,
+  .cg-alert-success,
+  .tasks-alert.success,
+  .settings-feedback.success,
+  .portfolio-alert-success,
+  .portfolio-approved-notice,
+  .task-status.completed,
+  .status-approved,
+  .status-completed,
+  .mg-status
+) {
+  border-color: #376d4b !important;
+  background-color: #1b3b2a !important;
+  color: #d7f6df !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  .profile-lock-notice,
+  .portfolio-review-notice,
+  .task-priority.medium,
+  .status-pending,
+  .profile-status.status-submitted
+) {
+  border-color: #69582e !important;
+  background-color: #392f1c !important;
+  color: #f7e7b6 !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  .profile-alert.error,
+  .settings-feedback.error,
+  .portfolio-alert-error,
+  .settings-feedback.error,
+  .tasks-alert.error,
+  .cg-alert-error,
+  .task-priority.high,
+  .status-rejected,
+  .status-failed,
+  .profile-status.status-changes_requested
+) {
+  border-color: #713e43 !important;
+  background-color: #3b2228 !important;
+  color: #ffd9d9 !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  .task-priority.low,
+  .task-status.pending,
+  .mg-role.member,
+  .cg-field label > span,
+  .portfolio-type-label,
+  .assessment-evidence-item,
+  .settings-account-details > div,
+  .portfolio-empty-state,
+  .settings-loading,
+  .portfolio-loading,
+  .tasks-empty,
+  .tasks-loading
+) {
+  border-color: #35445a !important;
+  background-color: #223149 !important;
+  color: #e6edf7 !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  .task-status.in_progress,
+  .mg-role.owner,
+  .cg-step,
+  .profile-section-icon,
+  .portfolio-entry-links a,
+  .assessment-evidence-item a
+) {
+  border-color: #425f88;
+  background-color: #263c5c;
+  color: #cfe0ff !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  .settings-loading,
+  .portfolio-loading,
+  .tasks-empty,
+  .tasks-loading
+) {
+  color: #e6edf7 !important;
+}
+
+.app-layout[data-theme='dark'] .main-area :is(
+  .task-update-button,
+  .settings-secondary-button,
+  .settings-theme-option,
+  .portfolio-secondary-button,
+  .cg-submit-row,
+  .cg-submit-note
+) {
+  border-color: #40516a;
+  background-color: #22334c;
+  color: #e6edf7;
+}
+
+.app-layout[data-theme='dark'] .notification-panel {
+  border-color: #35445a;
+  background: #172338;
+  color: #e6edf7;
+}
+
+.app-layout[data-theme='dark'] .notification-panel-header,
+.app-layout[data-theme='dark'] .notification-item {
+  border-color: #35445a;
+  background: #172338;
+  color: #e6edf7;
+}
+
+.app-layout[data-theme='dark'] .notification-item.unread,
+.app-layout[data-theme='dark'] .notification-item:hover {
+  background: #22334c;
+}
+
+.app-layout[data-theme='dark'] .notification-panel :is(h2, p, strong, span, small) {
+  color: #e6edf7;
+}
+
+.app-layout[data-theme='dark'] .notification-mark-all,
+.app-layout[data-theme='dark'] .notification-close,
+.app-layout[data-theme='dark'] .notification-panel-header h2 {
+  color: #9bc0ff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    scroll-behavior: auto;
+  }
+}

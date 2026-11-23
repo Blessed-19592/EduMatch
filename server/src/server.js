@@ -15,6 +15,8 @@ import taskRoutes from './routes/taskRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import chatAttachmentRoutes from './routes/chatAttachmentRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 import { configureSocketServer } from './sockets/socketServer.js';
 
@@ -335,6 +337,8 @@ app.use('/api', csrfProtection);
 // ======================================
 
 app.use('/api/auth', authRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/groups', groupRoutes);
 app.use('/api/groups', chatAttachmentRoutes);

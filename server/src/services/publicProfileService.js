@@ -1,4 +1,5 @@
 import pool from '../config/database.js';
+import { AppError } from '../utils/AppError.js';
 
 
 import { getStudentProfile } from './profileService.js';
@@ -9,6 +10,19 @@ import {
 } from './skillInterestService.js';
 
 export const getPublicStudentProfile = async (studentId) => {
+    const visibilityResult = await pool.query(
+        `SELECT COALESCE((
+            SELECT profile_discoverable
+            FROM user_settings
+            WHERE user_id = $1
+        ), TRUE) AS profile_discoverable`,
+        [studentId]
+    );
+
+    if (!visibilityResult.rows[0]?.profile_discoverable) {
+        throw new AppError('Student profile not found.', 404);
+    }
+
     // Retrieve the existing profile internally.
     // Sensitive fields will never be included in the response.
     const profile = await getStudentProfile(studentId);
