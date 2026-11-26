@@ -15,6 +15,16 @@ test('only approved and discoverable profiles are publicly visible', () => {
     );
     assert.equal(
         canViewPublicStudentProfile(
+            {
+                profile_review_status: 'approved',
+                profile_moderation_status: 'visible'
+            },
+            true
+        ),
+        true
+    );
+    assert.equal(
+        canViewPublicStudentProfile(
             { profile_review_status: 'submitted' },
             true
         ),
@@ -24,6 +34,16 @@ test('only approved and discoverable profiles are publicly visible', () => {
         canViewPublicStudentProfile(
             { profile_review_status: 'approved' },
             false
+        ),
+        false
+    );
+    assert.equal(
+        canViewPublicStudentProfile(
+            {
+                profile_review_status: 'approved',
+                profile_moderation_status: 'hidden'
+            },
+            true
         ),
         false
     );

@@ -10,6 +10,7 @@ import {
     getStudentProfile,
     updateStudentProfile
 } from '../services/profileService.js';
+import { submitStudentProfileForReview } from '../services/studentProfileReviewService.js';
 import {
     getStudentProfilePicture,
     uploadStudentProfilePicture
@@ -150,6 +151,7 @@ const partnerPreferencesSchema = z.object({
                 message: `Duplicate entries are not allowed in ${field}.`,
                 path: [field]
             });
+            const submitProfileSchema = z.object({}).strict();
         }
     }
 });
@@ -177,6 +179,32 @@ router.get('/me/profile', async (req, res, next) => {
 
     }
 
+});
+
+router.post('/me/profile/submit', async (req, res, next) => {
+    try {
+        const validation = submitProfileSchema.safeParse(req.body ?? {});
+
+        if (!validation.success) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Profile submission does not accept additional fields.',
+                errors: validation.error.issues
+            });
+        }
+
+        const result = await submitStudentProfileForReview(
+            req.currentUser.userId
+        );
+
+        return res.status(200).json({
+            status: 'success',
+            message: 'Your profile has been submitted for review.',
+            data: result
+        });
+    } catch (error) {
+        return next(error);
+    }
 });
 
 router.post(

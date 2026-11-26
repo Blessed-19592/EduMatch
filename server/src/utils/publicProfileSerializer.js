@@ -1,6 +1,7 @@
 export const canViewPublicStudentProfile = (profile, discoverable) =>
     discoverable === true &&
-    profile?.profile_review_status === 'approved';
+    profile?.profile_review_status === 'approved' &&
+    profile?.profile_moderation_status !== 'hidden';
 
 export const serializePublicStudentProfile = ({
     profile,

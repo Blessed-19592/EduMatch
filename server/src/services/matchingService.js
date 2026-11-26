@@ -282,6 +282,7 @@ const getStudentCandidates = async (studentId, years = []) => {
           AND u.role = 'student'
           AND u.account_status = 'active'
           AND sp.profile_review_status = 'approved'
+          AND sp.profile_moderation_status = 'visible'
           AND COALESCE((
               SELECT us.profile_discoverable
               FROM user_settings us

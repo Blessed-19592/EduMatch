@@ -30,6 +30,25 @@ export const getStudentProfile = async (userId) => {
             sp.profile_review_status,
             sp.profile_submitted_at,
             sp.profile_reviewed_at,
+            sp.profile_moderation_status,
+
+            (
+                SELECT review_notes
+                FROM profile_review_history
+                WHERE student_id = u.user_id
+                  AND review_action = 'changes_requested'
+                ORDER BY created_at DESC, review_id DESC
+                LIMIT 1
+            ) AS profile_review_notes,
+
+            (
+                SELECT review_notes
+                FROM profile_review_history
+                WHERE student_id = u.user_id
+                  AND review_action = 'profile_hidden'
+                ORDER BY created_at DESC, review_id DESC
+                LIMIT 1
+            ) AS profile_moderation_notes,
 
             rs.student_status,
 

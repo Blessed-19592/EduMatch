@@ -22,6 +22,7 @@ export const sendStudentCollaborationRequest = async (
             `SELECT
                 u.user_id,
                 sp.profile_review_status,
+                sp.profile_moderation_status,
                 COALESCE(us.profile_discoverable, TRUE) AS profile_discoverable
              FROM users u
              JOIN student_profiles sp ON sp.user_id = u.user_id

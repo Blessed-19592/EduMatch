@@ -318,6 +318,16 @@
   font-size: 14px;
 }
 
+.profile-review-changes {
+  border: 1px solid #f0dfb8;
+}
+
+.profile-review-hidden {
+  border: 1px solid #f3d0cb;
+  background: #fff3f1;
+  color: #8e3c33;
+}
+
 .profile-empty-hint,
 .profile-loading {
   font-size: 14px;
@@ -339,6 +349,27 @@
 .profile-save-all-button {
   min-width: 190px;
   min-height: 46px;
+}
+
+.profile-submit-review-button {
+  min-width: 230px;
+  min-height: 46px;
+  background: #218653;
+}
+
+.profile-submit-hint {
+  margin: 0;
+  color: #718096;
+  font-size: 12px;
+  text-align: right;
+}
+
+.profile-submit-review-button:hover:not(:disabled) {
+  background: #176d41;
+}
+
+.profile-save-all-area .profile-save-button:disabled {
+  cursor: not-allowed;
 }
 
 .profile-save-feedback {
@@ -390,7 +421,7 @@
     align-items: stretch;
   }
 
-  .profile-save-all-button {
+  .profile-save-all-area .profile-save-button {
     width: 100%;
   }
 }

@@ -7,6 +7,7 @@ import {
     resolvePicturePath,
     storePicture
 } from '../utils/pictureStorage.js';
+import { canViewPublicStudentProfile } from '../utils/publicProfileSerializer.js';
 
 const profilePictureUrl = (studentId) =>
     `/api/students/${encodeURIComponent(studentId)}/profile-picture`;
@@ -32,6 +33,7 @@ export const uploadStudentProfilePicture = async (
     let transactionStarted = false;
     let storageKey;
     let oldStorageKey;
+    let profileReviewStatus;
 
     try {
         await client.query('BEGIN');
@@ -60,6 +62,10 @@ export const uploadStudentProfilePicture = async (
         }
 
         oldStorageKey = profileResult.rows[0].profile_picture_storage_key;
+        profileReviewStatus =
+            profileResult.rows[0].profile_review_status === 'approved'
+                ? 'draft'
+                : profileResult.rows[0].profile_review_status;
         storageKey = await storePicture('profile', buffer, image.extension);
 
         const updates = [
@@ -107,7 +113,10 @@ export const uploadStudentProfilePicture = async (
         await cleanUpOldPicture(oldStorageKey);
     }
 
-    return { profilePictureUrl: profilePictureUrl(studentId) };
+    return {
+        profilePictureUrl: profilePictureUrl(studentId),
+        profileReviewStatus
+    };
 };
 
 export const getStudentProfilePicture = async (studentId, requesterId) => {
@@ -115,6 +124,7 @@ export const getStudentProfilePicture = async (studentId, requesterId) => {
         `SELECT
             sp.profile_picture_storage_key,
             sp.profile_review_status,
+            sp.profile_moderation_status,
             COALESCE(us.profile_discoverable, TRUE) AS profile_discoverable
          FROM student_profiles sp
          JOIN users u ON u.user_id = sp.user_id
@@ -131,9 +141,9 @@ export const getStudentProfilePicture = async (studentId, requesterId) => {
         !profile?.profile_picture_storage_key ||
         (
             !isOwner &&
-            (
-                !profile.profile_discoverable ||
-                profile.profile_review_status !== 'approved'
+            !canViewPublicStudentProfile(
+                profile,
+                profile.profile_discoverable
             )
         )
     ) {

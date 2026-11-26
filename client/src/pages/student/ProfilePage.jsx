@@ -212,6 +212,16 @@ export default function ProfilePage({ onPictureChange }) {
       setProfile(current => ({
         ...current,
         profile_picture_url: pictureUrlWithCacheKey,
+        profile_review_status:
+          response.data.data.profileReviewStatus ?? current?.profile_review_status,
+        profile_reviewed_at:
+          response.data.data.profileReviewStatus === 'draft'
+            ? null
+            : current?.profile_reviewed_at,
+        profile_submitted_at:
+          response.data.data.profileReviewStatus === 'draft'
+            ? null
+            : current?.profile_submitted_at,
       }));
       onPictureChange?.(pictureUrlWithCacheKey);
       setSaveFeedback({
@@ -288,9 +298,47 @@ export default function ProfilePage({ onPictureChange }) {
           type: 'error',
           message: `Could not save ${failedRequests.map(({ section }) => section).join(', ')}. Other sections may have saved. ${message}`,
         });
+        return false;
       } else {
+        setProfile(results[0].value.data.data);
         setSaveFeedback({ type: 'success', message: 'Profile saved successfully.' });
+        return true;
       }
+    } finally {
+      setSaving('');
+    }
+  };
+
+  const submitForReview = async () => {
+    if (selectedSkills.length === 0 || selectedIntentions.length === 0) {
+      setSaveFeedback({
+        type: 'error',
+        message: 'Choose at least one skill and one collaboration intention before submitting.',
+      });
+      return;
+    }
+
+    const saved = await saveAll();
+    if (!saved) return;
+
+    setSaving('review');
+    setSaveFeedback(null);
+
+    try {
+      const response = await api.post('/students/me/profile/submit', {});
+      setProfile((current) => ({ ...current, ...response.data.data }));
+      setSaveFeedback({
+        type: 'success',
+        message: 'Your profile was submitted to an administrator for review.',
+      });
+    } catch (requestError) {
+      setSaveFeedback({
+        type: 'error',
+        message: getApiErrorMessage(
+          requestError,
+          'Could not submit your profile for review.'
+        ),
+      });
     } finally {
       setSaving('');
     }
@@ -334,6 +382,22 @@ export default function ProfilePage({ onPictureChange }) {
 
       {error && <div className="profile-alert error" role="alert">{error}</div>}
       {locked && <div className="profile-lock-notice"><div><strong>Your profile is under review</strong><p>You can view your information, but editing is temporarily disabled until the review is complete.</p></div></div>}
+        {profile?.profile_review_status === 'changes_requested' && (
+          <div className="profile-lock-notice profile-review-changes">
+            <div>
+              <strong>Changes requested by an administrator</strong>
+              <p>{profile.profile_review_notes || 'Update your collaboration profile, save it, then submit it again for review.'}</p>
+            </div>
+          </div>
+        )}
+        {profile?.profile_moderation_status === 'hidden' && (
+          <div className="profile-lock-notice profile-review-hidden">
+            <div>
+              <strong>Your profile is hidden from student discovery</strong>
+              <p>{profile.profile_moderation_notes || 'Contact an administrator if you need more information.'}</p>
+            </div>
+          </div>
+        )}
 
       <section className="profile-card">
         <SectionHeading title="Personal & academic information" description="Your academic identity comes from the university student registry." />
@@ -464,6 +528,28 @@ export default function ProfilePage({ onPictureChange }) {
         >
           {saving === 'all' ? 'Saving profile…' : 'Save all changes'}
         </button>
+        {profile?.profile_review_status !== 'submitted' &&
+          profile?.profile_review_status !== 'approved' && (
+            <>
+              {(selectedSkills.length === 0 || selectedIntentions.length === 0) && (
+                <p className="profile-submit-hint">
+                  Select at least one skill and one collaboration intention to submit.
+                </p>
+              )}
+              <button
+                type="button"
+                className="profile-save-button profile-submit-review-button"
+                disabled={
+                  !!saving ||
+                  selectedSkills.length === 0 ||
+                  selectedIntentions.length === 0
+                }
+                onClick={submitForReview}
+              >
+                {saving === 'review' ? 'Submitting for review…' : 'Save and submit for review'}
+              </button>
+            </>
+          )}
       </div>
     </div>
   );

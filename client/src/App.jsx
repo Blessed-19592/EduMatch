@@ -19,6 +19,7 @@ import CompleteRegistrationPage from './pages/auth/CompleteRegistrationPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import ProfilePage from './pages/student/ProfilePage';
+import AdminReviewPage from './pages/admin/AdminReviewPage';
 import PublicStudentProfilePage from './pages/student/PublicStudentProfilePage';
 import DiscoverGroupsPage from './pages/student/DiscoverGroupsPage';
 import CreateGroupPage from './pages/student/CreateGroupPage';
@@ -802,16 +803,7 @@ function StudentWorkspace() {
 }
 
 function AdminLanding() {
-  const { user, logout } = useAuth();
-  return (
-    <main className="admin-coming-soon">
-      <div className="auth-brand-icon"><FontAwesomeIcon icon={faGraduationCap} /></div>
-      <span className="auth-kicker">EDUMATCH ADMINISTRATION</span>
-      <h1>Welcome, {user?.fullName || 'Administrator'}</h1>
-      <p>Your administrator account is authenticated. The administration workspace will be implemented against dedicated admin APIs.</p>
-      <button className="auth-submit admin-logout" onClick={logout}>Sign out</button>
-    </main>
-  );
+  return <AdminReviewPage />;
 }
 
 function RegistrationRoute() {

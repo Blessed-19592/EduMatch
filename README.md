@@ -8,6 +8,7 @@ This repository is a demonstration system. It uses a local seeded student regist
 
 - Student account registration, email verification, login/logout, session-based authentication, and password recovery.
 - Student collaboration profiles with academic details, skills, interests, collaboration intentions, availability, and teammate preferences.
+- Admin review of submitted collaboration profiles, changes requested with reasons, profile hiding/restoration, and review audit history.
 - Student matching and public student profile pages, subject to discoverability and profile eligibility rules.
 - Group creation and discovery, membership requests, group invitations, and direct student collaboration requests.
 - Group academic-year eligibility and a maximum group size of 15, including the owner.
@@ -142,7 +143,8 @@ $migrations = @(
   "016_student_collaboration_requests.sql",
   "017_chat_message_attachments.sql",
   "018_user_settings_and_notifications.sql",
-  "019_profile_and_group_pictures.sql"
+  "019_profile_and_group_pictures.sql",
+  "020_admin_profile_review.sql"
 )
 
 foreach ($migration in $migrations) {
@@ -170,6 +172,20 @@ if ($LASTEXITCODE -ne 0) { throw "Registry data seed failed." }
 ```
 
 The registry seed is demonstration data, not a feed from the University's systems. These SQL migrations are intended to build a fresh database in order; do not rerun them against an already migrated database.
+
+### Provision an initial administrator
+
+Admin accounts are not created through public student registration. After creating and verifying the designated staff account, a database operator can grant that existing active account the admin role:
+
+```sql
+UPDATE users
+SET role = 'admin'
+WHERE LOWER(email) = LOWER('<trusted-admin-email>')
+  AND role = 'student'
+  AND account_status = 'active';
+```
+
+Confirm exactly one row was updated. Only trusted staff accounts should receive this role. Admins can then sign in to `/admin` to review student profiles. Every decision is recorded in review history; requesting changes and hiding or restoring a profile require a reason.
 
 ## Run the application
 
