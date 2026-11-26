@@ -128,7 +128,9 @@ export const completeStudentRegistration = async (
     }
 };
 
-export const loginStudent = async (registrationNumber, password) => {
+export const loginUser = async (identifier, password) => {
+    const normalizedIdentifier = identifier.trim();
+
     const result = await pool.query(
         `SELECT
             user_id,
@@ -138,8 +140,16 @@ export const loginStudent = async (registrationNumber, password) => {
             role,
             account_status
          FROM users
-         WHERE registration_number = $1`,
-        [registrationNumber.trim().toUpperCase()]
+         WHERE (
+            role = 'student'
+            AND registration_number = $1
+         ) OR (
+            role = 'admin'
+            AND LOWER(email) = LOWER($2)
+            AND email_verified_at IS NOT NULL
+         )
+         LIMIT 1`,
+        [normalizedIdentifier.toUpperCase(), normalizedIdentifier]
     );
 
     if (result.rows.length === 0) {
@@ -165,21 +175,38 @@ export const loginStudent = async (registrationNumber, password) => {
     };
 };
 
-export const requestPasswordReset = async (registrationNumber) => {
+export const requestPasswordReset = async (identifier) => {
+    const normalizedIdentifier = identifier.trim();
+
     const result = await pool.query(
         `SELECT
             u.user_id,
             u.full_name,
-            rs.verification_email
+            CASE
+                WHEN u.role = 'admin' THEN u.email
+                ELSE rs.verification_email
+            END AS reset_email
          FROM users u
-         JOIN student_profiles sp
+         LEFT JOIN student_profiles sp
             ON sp.user_id = u.user_id
-         JOIN registry_students rs
+         LEFT JOIN registry_students rs
             ON rs.registry_student_id = sp.registry_student_id
-         WHERE u.registration_number = $1
-           AND u.role = 'student'
-           AND u.account_status = 'active'`,
-        [registrationNumber.trim().toUpperCase()]
+         WHERE u.account_status = 'active'
+           AND (
+                (
+                    u.role = 'student'
+                    AND u.registration_number = $1
+                    AND rs.registry_student_id IS NOT NULL
+                )
+                OR
+                (
+                    u.role = 'admin'
+                    AND LOWER(u.email) = LOWER($2)
+                    AND u.email_verified_at IS NOT NULL
+                )
+           )
+         LIMIT 1`,
+        [normalizedIdentifier.toUpperCase(), normalizedIdentifier]
     );
 
     // Do not reveal whether an account exists.
@@ -217,7 +244,7 @@ export const requestPasswordReset = async (registrationNumber) => {
 
     try {
         await sendPasswordResetEmail(
-            user.verification_email,
+            user.reset_email,
             token
         );
     } catch (error) {

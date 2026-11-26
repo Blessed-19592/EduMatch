@@ -2,7 +2,7 @@
 import { requireAuth } from '../middleware/requireAuth.js';
 import {
     completeStudentRegistration,
-    loginStudent,
+    loginUser,
     requestPasswordReset,
     resetStudentPassword
 } from '../services/authService.js';
@@ -59,12 +59,12 @@ const registrationSchema = z.object({
 });
 
 const loginSchema = z.object({
-    registrationNumber: z.string().trim().min(3).max(50),
+    identifier: z.string().trim().min(3).max(255),
     password: z.string().min(10).max(72),
 });
 
 const forgotPasswordSchema = z.object({
-    registrationNumber: z.string().trim().min(3).max(50),
+    identifier: z.string().trim().min(3).max(255),
 });
 
 const resetPasswordSchema = z.object({
@@ -219,9 +219,9 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        const { registrationNumber, password } = validation.data;
+        const { identifier, password } = validation.data;
 
-        const user = await loginStudent(registrationNumber, password);
+        const user = await loginUser(identifier, password);
 
         req.session.regenerate((error) => {
             if (error) {
@@ -254,7 +254,7 @@ router.post('/login', async (req, res) => {
 
         res.status(401).json({
             status: 'error',
-            message: 'Invalid registration number or password.',
+            message: 'Invalid sign-in details.',
         });
     }
 });
@@ -292,12 +292,12 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res, next) =>
         if (!validation.success) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Please provide a valid registration number.',
+                message: 'Please provide a valid sign-in identifier.',
             });
         }
 
         await requestPasswordReset(
-            validation.data.registrationNumber
+            validation.data.identifier
         );
 
         return res.status(200).json({

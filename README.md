@@ -175,17 +175,16 @@ The registry seed is demonstration data, not a feed from the University's system
 
 ### Provision an initial administrator
 
-Admin accounts are not created through public student registration. After creating and verifying the designated staff account, a database operator can grant that existing active account the admin role:
+Admin accounts are not created through public student registration. From an interactive terminal, run the operator-only provisioning command from the `server` directory:
 
-```sql
-UPDATE users
-SET role = 'admin'
-WHERE LOWER(email) = LOWER('<trusted-admin-email>')
-  AND role = 'student'
-  AND account_status = 'active';
+```powershell
+Set-Location server
+npm run create-admin
 ```
 
-Confirm exactly one row was updated. Only trusted staff accounts should receive this role. Admins can then sign in to `/admin` to review student profiles. Every decision is recorded in review history; requesting changes and hiding or restoring a profile require a reason.
+The command asks for a staff name, a verified staff email, and a password (password input is masked). It creates a separate active `admin` account without a registration number or student profile; it never changes an existing account. Verify the staff member and email through an approved channel before provisioning. Additional administrator accounts can be created by an authorized database operator running the same command. Admins sign in with their staff email and password, then visit `/admin`.
+
+Students continue to sign in with their registration number. Password recovery accepts a student registration number or an administrator's verified staff email. Admins must not be provisioned through a public signup route. Every profile review decision is recorded in review history; requesting changes and hiding or restoring a profile require a reason.
 
 ## Run the application
 

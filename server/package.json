@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "dev": "node --use-system-ca --watch src/server.js",
-    "start": "node --use-system-ca src/server.js"
+    "start": "node --use-system-ca src/server.js",
+    "create-admin": "node scripts/createAdmin.js"
   },
   "keywords": [],
   "author": "",
