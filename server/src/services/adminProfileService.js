@@ -118,6 +118,52 @@ export const getAdminProfiles = async ({
     };
 };
 
+export const approveAllSubmittedStudentProfiles = async (adminId) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const result = await client.query(
+            `WITH approved_profiles AS (
+                UPDATE student_profiles sp
+                SET profile_review_status = 'approved',
+                    profile_reviewed_at = NOW(),
+                    profile_reviewed_by = $1,
+                    updated_at = NOW()
+                FROM users u
+                WHERE u.user_id = sp.user_id
+                  AND u.role = 'student'
+                  AND u.account_status = 'active'
+                  AND sp.profile_review_status = 'submitted'
+                RETURNING sp.user_id
+            ),
+            logged_approvals AS (
+                INSERT INTO profile_review_history (
+                    student_id,
+                    reviewed_by,
+                    review_action,
+                    review_notes
+                )
+                SELECT user_id, $1, 'approved', 'Approved in bulk by administrator.'
+                FROM approved_profiles
+                RETURNING student_id
+            )
+            SELECT COUNT(*)::int AS "approvedCount"
+            FROM logged_approvals`,
+            [adminId]
+        );
+
+        await client.query('COMMIT');
+        return { approvedCount: result.rows[0].approvedCount };
+    } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
 export const reviewStudentProfile = async (
     adminId,
     studentId,

@@ -101,6 +101,25 @@
   font-size: 12px;
 }
 
+.admin-review-bulk-approval {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid #e8d9b8;
+  border-radius: 9px;
+  background: #fffaf0;
+}
+
+.admin-review-bulk-approval p {
+  margin: 0;
+  color: #72531c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .admin-review-list {
   display: grid;
   gap: 16px;
@@ -388,6 +407,11 @@
 
 @media (max-width: 760px) {
   .admin-review-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-review-bulk-approval {
     align-items: flex-start;
     flex-direction: column;
   }

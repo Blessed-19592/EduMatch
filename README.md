@@ -244,9 +244,7 @@ The PostgreSQL schema covers accounts and student profiles; academic registry da
 
 ## Current limitations
 
-- The Admin route authenticates an admin account but displays a “coming soon” page; a functional administrator workspace and dedicated admin APIs are not implemented.
-- No admin account bootstrap or seed procedure is included; the public registration flow creates student accounts.
-- Profile review status is represented in the database, and matching/public student visibility require approval. However, the current student profile page has no submit-for-review action and there is no implemented admin review flow. As a result, recommendations may be empty until an approved profile exists.
+- Student collaboration profiles require student submission and admin approval before they appear in discovery. Admins can approve submitted profiles individually or approve all currently submitted profiles in bulk; draft profiles and registry-only students are excluded, and bulk approval does not make hidden profiles visible.
 - Student registration checks against the locally seeded registry. There is no live university registry integration or automated registry-data refresh.
 - Email is configured for Gmail through `EMAIL_USER` and `EMAIL_APP_PASSWORD`; another provider is not configurable through the current implementation.
 - Uploaded pictures and chat attachments are stored locally under `server/storage/`. They are not shared across separate developer machines or persisted by a remote object-storage service.

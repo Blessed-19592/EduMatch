@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { requireAdmin } from '../middleware/requireRole.js';
 import {
+    approveAllSubmittedStudentProfiles,
     getAdminProfiles,
     moderateStudentProfile,
     reviewStudentProfile
@@ -54,6 +55,24 @@ router.get('/profiles', async (req, res, next) => {
         return res.status(200).json({
             status: 'success',
             ...result
+        });
+    } catch (error) {
+        return next(error);
+    }
+});
+
+router.post('/profiles/review/approve-all', async (req, res, next) => {
+    try {
+        const result = await approveAllSubmittedStudentProfiles(
+            req.currentUser.userId
+        );
+
+        return res.status(200).json({
+            status: 'success',
+            message: `Approved ${result.approvedCount} submitted student ${
+                result.approvedCount === 1 ? 'profile' : 'profiles'
+            }.`,
+            data: result
         });
     } catch (error) {
         return next(error);

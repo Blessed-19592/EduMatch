@@ -20,6 +20,7 @@ export default function AdminReviewPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [workingStudentId, setWorkingStudentId] = useState(null);
+  const [bulkApproving, setBulkApproving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const requestSequence = useRef(0);
@@ -95,6 +96,31 @@ export default function AdminReviewPage() {
     loadProfiles(status, offset + PAGE_SIZE);
   };
 
+  const approveAllSubmitted = async () => {
+    if (bulkApproving || totalCount === 0) return;
+
+    const confirmed = window.confirm(
+      `Approve all ${totalCount} submitted profiles? This will not approve draft profiles or make hidden profiles visible.`
+    );
+
+    if (!confirmed) return;
+
+    setBulkApproving(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const response = await api.post('/admin/profiles/review/approve-all');
+      setNotice(response.data.message);
+      setLoading(true);
+      await loadProfiles(status, 0);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Bulk approval could not be completed.'));
+    } finally {
+      setBulkApproving(false);
+    }
+  };
+
   return (
     <main className="admin-review-page">
       <header className="admin-review-header">
@@ -118,7 +144,7 @@ export default function AdminReviewPage() {
             key={tab.value}
             className={status === tab.value ? 'active' : ''}
             aria-pressed={status === tab.value}
-            disabled={workingStudentId !== null}
+            disabled={workingStudentId !== null || bulkApproving}
             onClick={() => {
               setLoading(true);
               setError('');
@@ -135,6 +161,23 @@ export default function AdminReviewPage() {
         <h2>{TABS.find((tab) => tab.value === status)?.label}</h2>
         {!loading && <span>{totalCount} {totalCount === 1 ? 'profile' : 'profiles'}</span>}
       </div>
+
+      {status === 'submitted' && totalCount > 0 && (
+        <div className="admin-review-bulk-approval">
+          <p>
+            This action approves every submitted profile, including profiles not yet loaded on this page.
+            Draft and registry-only students are not included.
+          </p>
+          <button
+            type="button"
+            className="admin-review-primary"
+            disabled={loading || bulkApproving || workingStudentId !== null}
+            onClick={approveAllSubmitted}
+          >
+            {bulkApproving ? 'Approving profiles…' : `Approve all ${totalCount} submitted`}
+          </button>
+        </div>
+      )}
 
       {notice && <p className="admin-review-feedback success" role="status">{notice}</p>}
       {error && (
@@ -245,7 +288,7 @@ export default function AdminReviewPage() {
                 minLength={10}
                 maxLength={1000}
                 rows={3}
-                disabled={workingStudentId !== null}
+                disabled={workingStudentId !== null || bulkApproving}
               />
 
               <div className="admin-review-actions">
@@ -254,7 +297,7 @@ export default function AdminReviewPage() {
                     <button
                       type="button"
                       className="admin-review-primary"
-                      disabled={workingStudentId !== null}
+                      disabled={workingStudentId !== null || bulkApproving}
                       onClick={() => runAction(profile, 'review', 'approve', false)}
                     >
                       Approve profile
@@ -262,7 +305,7 @@ export default function AdminReviewPage() {
                     <button
                       type="button"
                       className="admin-review-secondary"
-                      disabled={workingStudentId !== null}
+                      disabled={workingStudentId !== null || bulkApproving}
                       onClick={() => runAction(profile, 'review', 'request_changes', true)}
                     >
                       Request changes
@@ -274,7 +317,7 @@ export default function AdminReviewPage() {
                   <button
                     type="button"
                     className="admin-review-danger"
-                    disabled={workingStudentId !== null}
+                    disabled={workingStudentId !== null || bulkApproving}
                     onClick={() => runAction(profile, 'moderation', 'hide', true)}
                   >
                     Hide profile
@@ -299,7 +342,7 @@ export default function AdminReviewPage() {
         <button
           type="button"
           className="admin-review-load-more"
-          disabled={loadingMore}
+          disabled={loadingMore || bulkApproving}
           onClick={loadMore}
         >
           {loadingMore ? 'Loading…' : 'Load more profiles'}
